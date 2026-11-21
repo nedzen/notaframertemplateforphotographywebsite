@@ -1,9 +1,9 @@
 {
-  "name": "dylan-calluy-framer-mirror",
+  "name": "dylan-calluy-portfolio-template",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Offline mirror of https://smiling-listening-668328.framer.app/",
+  "description": "Standalone vanilla HTML/CSS/JS photographer portfolio template",
   "scripts": {
     "start": "node server.mjs"
   },

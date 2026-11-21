@@ -1,62 +1,68 @@
-# Dylan Calluy — Framer site mirror
+# Dylan Calluy — portfolio template
 
-Offline copy of <https://smiling-listening-668328.framer.app/> (published 21 Nov 2026),
-mirrored with every runtime dependency on disk.
+A standalone copy of the published photographer portfolio, extracted from its
+Framer page and stripped of the Framer runtime. Plain HTML, CSS, and vanilla
+JavaScript — no framework, no build step, no external requests.
 
 ## Run
 
 ```sh
-node server.mjs          # http://localhost:4321
+npm start            # http://localhost:4321
 # or
-npm start
+node server.mjs
 ```
 
-Requires Node 18+. A server is required: the site is an ES-module app, and
-`file://` blocks module imports and routing. The port can be changed
-(`PORT=5000 node server.mjs`); nothing in the mirror hardcodes it.
+Node 18+. The server only serves files and falls back to `index.html` for the
+clean routes. Any static host will work if it has the same SPA fallback
+(`/about`, `/grid`, `/contact`, `/projects/*` → `index.html`).
 
-## What is included
+## Routes
 
-- All 13 routes: `/`, `/grid`, `/about`, `/contact`, eight `/projects/<slug>`
-  pages, and `/404` (unknown paths fall back to it).
-- Framer runtime and page modules, CMS data chunks, search index.
-- 94 gallery images plus all project media, poster frames and the mp4 video.
-- Geist webfonts (Google Fonts CSS/Files) and the site's bundled woff2 files.
-- Client-side routing, index hover previews, project strip/stage and keyboard
-  paging, grid lightbox with MONO toggle, about/contact panels, form validation.
-
-## Local-only substitutions
-
-These are the only intentional differences from the published site:
-
-| Published behaviour | Local behaviour |
+| URL | View |
 | --- | --- |
-| Framer editor-bar overlay (authoring UI, needs framer.com login) | `/stub/editorbar.mjs` no-op module |
-| Framer analytics (`events.framer.com`) | empty `/stub/analytics.js` |
-| Contact form POSTs to `api.framer.com/forms/...` | local `POST /api/forms/<id>/submit`, appended to `data/submissions.jsonl` |
+| `/` | Project index with hover previews |
+| `/grid` | Photo grid, lightbox, MONO toggle |
+| `/about` | About panel |
+| `/contact` | Contact panel |
+| `/projects/<slug>` | Project strip, stage, carousel and Next |
 
-The form's visible behaviour is unchanged: invalid fields are marked, and a
-successful submit swaps SEND for “Thank you, I’ll be in touch.” No email is
-sent from the local copy.
+Navigation uses the History API, so the back/forward buttons and deep links
+work. Every view also has a hash route (`#about`, `#grid`, `#contact`,
+`#japan`) used internally by the template.
 
-External links (Instagram, LinkedIn, X, the “Made in Framer” badge) still point
-to their real destinations and need a connection.
-
-## Layout
+## Files
 
 ```
-server.mjs          static server, route fallbacks, byte ranges, form endpoint
-public/             the mirrored site
-  index.html        / and the other route documents
-  framerusercontent.com/   modules, CMS chunks, images, video, fonts
-  fonts.googleapis.com/    Google Fonts CSS
-  fonts.gstatic.com/       Google Fonts files
-  stub/             local analytics and editor-bar stubs
-data/               form submissions created at runtime (not served)
+index.html     markup: navigation, index, gallery, grid, about, contact, project
+styles.css     the template's CSS (desktop, tablet, phone, reduced motion)
+script.js      media helpers, routing, transitions, preloader, grid, projects
+data.js        project media, grouped by project slug
+fonts.css      Geist 300, five unicode subsets
+assets/images  95 photographs and poster frames
+assets/video   the project clip
+assets/fonts   Geist woff2 files
+server.mjs     tiny static server with clean-URL fallback
+```
+
+## Editing
+
+- Copy, project names, gallery, grid and about text live in `index.html`.
+- Project media (images, clip, poster, orientation, alt text) lives in `data.js`.
+- Colours, spacing, type and motion live in `styles.css` (`:root` at the top).
+- The grid is shuffled on every load by design.
+
+The contact form validates in the browser, then shows the thank-you line and
+emits `contact:submit` with `{ name, email, message }`. There is no backend:
+
+```js
+document.addEventListener("contact:submit", (event) => {
+  // send event.detail to your API
+});
 ```
 
 ## Notes
 
-This is a read-only reference copy for local development. The design, photography
-and code belong to their original author; the Framer badge and external links are
-kept for attribution.
+The original page was a Framer site whose custom component embedded this
+template. The Framer wrapper, editor bar, analytics, CMS runtime and hosting
+assets have been removed; the template's own markup, styles and interaction
+code are kept. Design, photography and copy belong to Dylan Calluy.

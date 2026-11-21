@@ -1,0 +1,2721 @@
+/* =========================================================================
+   Index page — desktop (1440 × 800 reference)
+
+   Layout guide: 12 columns, auto width, 10px margin, 4px gutter.
+   At 1440 that makes one column 114.67px; four columns (with three gutters)
+   are 471px, three are 352px, eight are 945px — the widths used below are
+   all expressed as column spans so they stay on-grid at other widths.
+
+   Motion: a load sequence only. Hover stays a plain
+   crossfade with a static rule. Everything sits behind
+   prefers-reduced-motion.
+   ========================================================================= */
+
+:root {
+  --margin: 10px;
+  --gutter: 4px;
+
+  /* Light theme (default) */
+  --bg: #ffffff;
+  --text: #000000;
+  --dim: rgba(0, 0, 0, 0.2);       /* inactive rows */
+  --muted: rgba(0, 0, 0, 0.4);     /* the role line under the name */
+  --line-soft: rgba(0, 0, 0, 0.2); /* hairlines */
+  --line-strong: #000000;          /* the rule under the active row */
+  --ink-copy: #101111;             /* running text (about) */
+  --panel: rgba(255, 255, 255, 0.95); /* frosted overlay (About, Contact, the header band under them) */
+  --frost: 8px;                       /* its blur — the same as the grid's behind an expanded photo */
+
+  /* Header height on the reference frame (main starts at y=148.5). On
+     taller screens the header grows past this so the gallery can keep
+     its 945:631 ratio; it never shrinks below it. */
+  --header-h: 148.5px;
+  --gallery-ratio: 945 / 631;
+  --sheet-gap: 120px; /* grid view: air between rows of the contact sheet */
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1); /* soft in, soft out */
+  /* For long strokes: a visible start, quick middle, soft landing. Pure
+     ease-out jumps 40% of the way in the first tenth of the time, which
+     hides where a long line begins. */
+  --ease-line: cubic-bezier(0.35, 0.1, 0.25, 1);
+  /* Strong ease-out with a long tail: most of the travel early, then a
+     slow glide home. */
+  --dur-state: 0.35s; /* row colour */
+  --dur-fade: 0.45s;  /* image crossfade */
+  --dur-enter: 0.9s;  /* row hairlines on load */
+  --preload-reveal: 0.7s; /* preloader: one photo's clip time (its zoom runs 1.45× longer) */
+  --ease-preload: cubic-bezier(0.45, 0, 0.15, 1); /* preloader: the clip's and the zoom's curve, a gentle in-out */
+  --dur-reveal: 1.12s; /* grid: scroll-in fade and rise */
+  --ease-reveal: cubic-bezier(0.23, 1, 0.32, 1); /* smooth, long deceleration */
+}
+
+/* Dark palette — reference only, not wired to any toggle. Preview with
+   data-theme="dark" on <html>. */
+:root[data-theme="dark"] {
+  --bg: #0e0e0e;
+  --text: #f2f2f2;
+  --dim: rgba(255, 255, 255, 0.3);
+  --muted: rgba(255, 255, 255, 0.5);
+  --line-soft: rgba(255, 255, 255, 0.18);
+  --line-strong: #ffffff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Geist", sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* On desktop nothing on the page scrolls, so the document is locked and
+   can't rubber-band when a wheel reaches it (the project page steps its
+   media on the wheel). Touch sizes scroll the document instead. */
+@media (min-width: 1101px) {
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
+/* Base text style: 10px, 120% line height, no tracking, uppercase. */
+.page {
+  /* Where About and Contact start. Usually the main rule; on a squarer
+     window, where the header grows to keep the gallery's ratio, no further
+     down than a fifth of the screen. */
+  --sheet-top: min(var(--main-top, var(--header-h)), max(var(--header-h), 20vh));
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+/* ---------- The grid ----------
+   Header and Main both sit on the same 12-column grid so the nav links
+   and the gallery tiles share column edges. */
+.header,
+.main {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding-left: var(--margin);
+  padding-right: var(--margin);
+}
+
+/* ---------- Header (y 10 → 148.5) ----------
+   The header is the flexible band: it takes whatever height the gallery
+   leaves over, so the gallery's ratio stays constant across screen sizes
+   instead of stretching with the viewport. At 1440×800 that resolves to
+   the reference 148.5px. */
+.header {
+  flex: 1 1 auto;
+  min-height: var(--header-h);
+  padding-top: var(--margin);
+  align-items: start;
+}
+
+.header__identity {
+  grid-column: 1 / span 4;
+  display: flex;
+  flex-direction: column;
+}
+
+.header__role {
+  color: var(--muted);
+}
+
+/* Nav spans cols 5–12 and is itself an 8-column grid, so each link sits
+   at a column edge: ABOUT col 5, PROJECTS col 9, GRID col 10, CONTACT
+   right-aligned to the last column. */
+.nav {
+  grid-column: 5 / span 8;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  column-gap: var(--gutter);
+}
+
+.nav__link--about { grid-column: 1; }
+.nav__link--projects { grid-column: 5; }
+.nav__link--grid { grid-column: 6; }
+.nav__link--contact { grid-column: 8; justify-self: end; }
+
+.nav__link {
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+@media (hover: hover) {
+  .nav:hover .nav__link:not(:hover) {
+    color: var(--dim);
+  }
+}
+
+/* Grid-only control: sits under GRID on the nav's second line (level with
+   the role under the name) and is only there while the grid is open. The
+   word stays MONO; muted when off, black when on. */
+.nav__mono {
+  grid-column: 6;
+  grid-row: 2;
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--muted);
+  text-transform: inherit;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) ease, color var(--dur-state) ease;
+}
+
+.nav__mono:hover,
+.nav__mono:focus-visible,
+.nav__mono[aria-pressed="true"] {
+  color: var(--text);
+}
+
+.nav__mono:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+.page:has(.grid-view.is-open:not(.is-leaving)):not(:has(.about:not([hidden]), .contact:not([hidden]))) .nav__mono {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- Main (y 148.5 → 800) ---------- */
+.main {
+  position: relative;
+  flex: 0 0 auto; /* sized by the gallery; the header flexes instead */
+  padding-top: 0.5px; /* room for the rule below */
+  padding-bottom: var(--margin);
+}
+
+/* The hairline across the top of Main (x 10 → 1430). A pseudo-element
+   rather than a border so it can draw in on load. */
+.main::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--margin);
+  right: var(--margin);
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+}
+
+/* Left column (cols 1–4, 471px): list on top, headline pinned to the
+   bottom edge of the gallery. Internally a 4-column grid so the 352px
+   list and headline can span three of those columns. */
+.index {
+  grid-column: 1 / span 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: 1fr auto;
+  column-gap: var(--gutter);
+  align-content: space-between;
+}
+
+.projects {
+  grid-column: 1 / span 3;
+  list-style: none;
+  align-self: start;
+}
+
+/* One row: 28px tall, number in the first column, name from the second. */
+.project {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  column-gap: var(--gutter);
+  align-items: center;
+  height: 28px;
+  color: var(--dim);
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+/* Each row's hairline sits on its top edge; the first row sits directly
+   under the Main rule, so it draws none. */
+.project::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+  transition: background-color 0.18s ease;
+}
+
+.projects li:first-child .project::before {
+  display: none;
+}
+
+.project.is-active {
+  color: var(--text);
+}
+
+/* On hover the name nudges one gutter to the right. Tied to the pointer
+   (and keyboard focus), not to the active state, so the resting page and
+   the default row 01 sit exactly on the grid. */
+.project__name {
+  transition: translate var(--dur-state) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .project:hover .project__name,
+  .project:focus-visible .project__name {
+    translate: var(--gutter) 0;
+  }
+}
+
+/* The rule *below* the active row goes solid — that's the next row's
+   hairline. */
+.projects li:has(> .project.is-active) + li .project::before {
+  background: var(--line-strong);
+}
+
+.project:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: -2px;
+}
+
+/* Headline: INDEX (32px, 100% line height, -2% tracking) with the count
+   (14px, -2% tracking) at the far right of the same 3-column span. Both
+   are cap-trimmed so their cap heights top-align and INDEX's baseline
+   lands on the gallery's bottom edge. The block clips so INDEX can rise
+   out of it on load. */
+.headline {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  overflow: hidden;
+  /* The mask reaches a little above the cap line (padding, cancelled by
+     the margin, so nothing moves): round digits like 8, 6, 3 or 0 rise a
+     touch above it and would otherwise be shaved off. */
+  padding-top: 3px;
+  margin-top: -3px;
+}
+
+.headline__title,
+.headline__count {
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+.headline__title {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.headline__count {
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* Fallback when text-box-trim is unsupported: nudge so the baselines
+   still land roughly where the trimmed version puts them. */
+@supports not (text-box-trim: trim-both) {
+  .headline {
+    overflow: visible;
+  }
+  .headline__title {
+    margin-bottom: -0.1em;
+  }
+  .headline__count {
+    margin-top: -0.14em;
+  }
+}
+
+/* ---------- Gallery (cols 5–12, 945 × 631) ----------
+   Every project's image set is stacked in the same box and only the
+   active one is visible, so switching rows crossfades the tiles. */
+.gallery {
+  grid-column: 5 / span 8;
+  position: relative;
+  margin-top: var(--margin);
+  /* Width is the grid span; height follows the reference ratio so the
+     crop is identical at every width. `align-self: start` keeps the grid
+     from stretching the height and overriding the ratio. */
+  width: 100%;
+  align-self: start;
+  aspect-ratio: var(--gallery-ratio);
+  /* Short or ultra-wide viewports (wider than ~2.25:1) can't fit the
+     full-ratio gallery above the minimum header. Cap the height there so
+     the page never scrolls; the explicit width keeps the tiles on the
+     grid and only the crop changes. */
+  max-height: calc(100vh - var(--header-h) - 2 * var(--margin) - 0.5px);
+}
+
+.gallery__set {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: var(--gutter);
+  opacity: 0;
+  transition: opacity var(--dur-fade) ease;
+  pointer-events: none;
+}
+
+.gallery__set.is-active {
+  opacity: 1;
+  z-index: 1;
+}
+
+/* One tile fills the set; two share it in halves (470 / 471). */
+.tile {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--line-soft);
+  clip-path: inset(0);
+}
+
+.tile :is(img, video) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* =========================================================================
+   About (Figma 512-753)
+   A frosted panel over the whole main area, below the header, on the
+   same 12-column grid. Portrait in col 3, bio in cols 5–7, awards in the
+   lower half of cols 5–12. Opened from the nav; the index stays
+   underneath, dimmed and blurred. Contact (below) shares the panel.
+   ========================================================================= */
+.about,
+.contact {
+  position: absolute;
+  inset: calc(var(--sheet-top) - var(--main-top, var(--header-h))) 0 0; /* up from the rule, by what --sheet-top saves */
+  overflow-y: auto; /* a short window scrolls rather than clips */
+  scrollbar-width: none;
+  z-index: 7; /* above the grid view (5), which may be open underneath */
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding: 0 var(--margin) var(--margin);
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(var(--frost));
+  backdrop-filter: blur(var(--frost));
+  opacity: 1;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.about[hidden],
+.contact[hidden] {
+  display: none;
+}
+
+.about.is-closing,
+.contact.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.about.is-opening,
+.contact.is-opening {
+  opacity: 0;
+}
+
+/* Portrait: one column wide (115px), 154 tall, 10px below the rule. */
+.about__portrait {
+  grid-column: 3;
+  margin-top: var(--margin);
+  aspect-ratio: 115 / 154;
+  overflow: hidden;
+}
+
+.about__portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
+}
+
+/* Cols 5–12, split into two equal halves: bio on top, awards below. */
+.about__body {
+  grid-column: 5 / span 8;
+  display: grid;
+  /* Two equal halves, unless the bio needs more: then it pushes the list
+     down rather than running into it. */
+  grid-template-rows: minmax(max-content, 1fr) 1fr;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  margin-top: var(--margin);
+  min-height: 0;
+}
+
+/* Bio: 3 columns (352px), 12px, −2%, justified, 14px between paragraphs.
+   Running text is the one place on the page that isn't uppercase. */
+.about__bio {
+  grid-row: 1;
+  grid-column: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 40px; /* the least air above the list */
+  color: var(--ink-copy);
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-align: justify;
+  text-transform: none;
+}
+
+.about__awards {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-self: start;
+}
+
+/* Header row spans all 8 columns; the list spans 4 (470px). */
+.about__awards-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  font-size: 10px;
+  font-weight: 300;
+  line-height: 1.2;
+}
+
+/* The rule under AWARDS is a pseudo-element so it can draw in from the
+   left like the main hairline on the index. */
+.about__awards-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+}
+
+/* Award rows share the bio's text setting: 12px, −2%, not uppercase. */
+.awards {
+  list-style: none;
+  width: calc(50% - var(--gutter) / 2);
+  color: var(--ink-copy);
+  font-size: 12px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+.award {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 28px;
+  border-bottom: 0.5px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.award__year {
+  color: var(--text);
+}
+
+/* Opening: the panel fades in as a sheet, then its content arrives in
+   order — portrait, the bio paragraph by paragraph, the awards header,
+   the rows. Closing fades the whole sheet at once. */
+@media (prefers-reduced-motion: no-preference) {
+  .about__portrait,
+  .about__bio p,
+  .about__awards-title,
+  .award {
+    opacity: 0;
+    transition: opacity 0.7s ease;
+  }
+
+  .about.is-open .about__portrait,
+  .about.is-open .about__bio p,
+  .about.is-open .about__awards-title,
+  .about.is-open .award {
+    opacity: 1;
+  }
+
+  .about.is-open .about__portrait { transition-delay: 100ms; }
+  .about.is-open .about__bio p:nth-child(1) { transition-delay: 220ms; }
+  .about.is-open .about__bio p:nth-child(2) { transition-delay: 300ms; }
+  .about.is-open .about__bio p:nth-child(3) { transition-delay: 380ms; }
+  .about.is-open .about__bio p:nth-child(4) { transition-delay: 460ms; }
+  .about.is-open .about__awards-title { transition-delay: 520ms; }
+
+  /* The AWARDS rule draws left → right on the main hairline's curve,
+     starting with the header text. Shorter than the index's 2.2s since
+     the line is two thirds the length. */
+  .about__awards-title::after {
+    transform: scaleX(0);
+    transition: transform 1.8s var(--ease-line);
+  }
+
+  .about.is-open .about__awards-title::after {
+    transform: scaleX(1);
+    transition-delay: 520ms;
+  }
+  .about.is-open .award:nth-child(1) { transition-delay: 600ms; }
+  .about.is-open .award:nth-child(2) { transition-delay: 670ms; }
+  .about.is-open .award:nth-child(3) { transition-delay: 740ms; }
+  .about.is-open .award:nth-child(4) { transition-delay: 810ms; }
+}
+
+/* =========================================================================
+   Contact (Figma 543-2)
+   The same frosted panel. Headline in cols 5–7 with its second line
+   indented one column; the form 100px under it in cols 5–8 as 40px rows
+   with a hairline on top and a dimmed 12px label centred in the row;
+   SEND 80px under the last row; social links on the panel's bottom edge,
+   one column each.
+   ========================================================================= */
+/* Rows: headline, form, free space, social links pinned to the bottom. */
+.contact {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.contact__title {
+  grid-column: 5 / span 3;
+  grid-row: 1;
+  margin-top: var(--margin);
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+.contact__line {
+  display: block;
+}
+
+/* One column plus a gutter, measured inside the 3-column span. */
+.contact__line--indent {
+  padding-left: calc((100% - 2 * var(--gutter)) / 3 + var(--gutter));
+}
+
+.contact__form {
+  grid-column: 5 / span 4;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  margin-top: 100px; /* Figma: 100px from the headline's baseline */
+}
+
+/* INSTAGRAM, LINKEDIN, X: a 4-column sub-grid over the form's span, so
+   each link starts on a page column (5, 6, 7). 14px row, 10px type, on
+   the panel's bottom margin. */
+.contact__social {
+  grid-column: 5 / span 4;
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  align-items: center;
+  height: 14px;
+  list-style: none;
+}
+
+.contact__social-link {
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+.contact__social-link:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Same hover grammar as the nav: the others dim. */
+@media (hover: hover) {
+  .contact__social:hover .contact__social-link:not(:hover) {
+    color: var(--dim);
+  }
+}
+
+/* A field is a 40px row: hairline on top (a pseudo-element so it can
+   draw in), label centred, the input laid over the whole row. */
+.field {
+  position: relative;
+  display: block;
+  height: 40px;
+}
+
+.field::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+  transition: background-color var(--dur-state) ease;
+}
+
+/* 12px, not uppercase, at the role line's grey: quiet, but the only thing
+   saying what the field is for, so it has to read. */
+.field__label {
+  position: absolute;
+  top: 13px;
+  left: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--muted);
+  text-transform: none;
+  pointer-events: none;
+  transition: opacity var(--dur-state) ease, color var(--dur-state) ease;
+}
+
+.field__input {
+  position: absolute;
+  inset: 0.5px 0 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px; /* typed text takes the label's size */
+  color: var(--text);
+  text-transform: none;
+  outline: none;
+  resize: none;
+}
+
+/* The message field is taller (40 + 80 = 120, down to SEND). Typing starts
+   where the label sits, as in the other fields, with a gap under the text. */
+.field--message {
+  height: 120px;
+}
+
+.field--message .field__input {
+  top: 13px; /* the label's */
+  bottom: 16px;
+  line-height: 1.2;
+}
+
+/* Autofill keeps the page's look: browsers tint a filled field (Chrome blue,
+   Safari yellow) with a background they won't let go of, so it is clipped
+   to the letters, under the ink, and its fade put off indefinitely. */
+.field__input:is(:-webkit-autofill, :autofill) {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
+/* The label is the placeholder: it goes once there is text. Focus and an
+   invalid field are marked on the hairline, like the active index row;
+   an invalid field's label also comes up to black. */
+.field:has(.field__input:not(:placeholder-shown)) .field__label {
+  opacity: 0;
+}
+
+.field:focus-within::before,
+.field.is-invalid::before {
+  background: var(--line-strong);
+}
+
+.field.is-invalid .field__label {
+  color: var(--text);
+}
+
+.contact__actions {
+  height: 12px;
+}
+
+.contact__send {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  text-transform: inherit;
+  cursor: pointer;
+  transition: color var(--dur-state) ease;
+}
+
+.contact__send:hover,
+.contact__send:focus-visible {
+  color: var(--muted);
+}
+
+.contact__send:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+.contact__note {
+  color: var(--ink-copy);
+  text-transform: none;
+}
+
+/* Opening: the sheet fades in, then the headline, then each row's
+   hairline draws in with its label a beat behind, then SEND. */
+@media (prefers-reduced-motion: no-preference) {
+  .contact__title,
+  .field__label,
+  .contact__actions,
+  .contact__social {
+    opacity: 0;
+    transition: opacity 0.7s ease;
+  }
+
+  .field::before {
+    transform: scaleX(0);
+    transition: transform var(--dur-enter) var(--ease-out), background-color var(--dur-state) ease;
+  }
+
+  .contact.is-open .contact__title,
+  .contact.is-open .field__label,
+  .contact.is-open .contact__actions,
+  .contact.is-open .contact__social {
+    opacity: 1;
+  }
+
+  .contact.is-open .field::before {
+    transform: scaleX(1);
+  }
+
+  .contact.is-open .contact__title { transition-delay: 100ms; }
+  .contact.is-open .field:nth-child(1)::before { transition-delay: 220ms, 0s; }
+  .contact.is-open .field:nth-child(2)::before { transition-delay: 300ms, 0s; }
+  .contact.is-open .field:nth-child(3)::before { transition-delay: 380ms, 0s; }
+  .contact.is-open .field:nth-child(1) .field__label { transition-delay: 340ms; }
+  .contact.is-open .field:nth-child(2) .field__label { transition-delay: 420ms; }
+  .contact.is-open .field:nth-child(3) .field__label { transition-delay: 500ms; }
+  .contact.is-open .contact__actions { transition-delay: 600ms; }
+  .contact.is-open .contact__social { transition-delay: 700ms; }
+
+  /* Once the panel is open the label is a placeholder again: it goes
+     on the state timing, without the entrance delay. */
+  .contact.is-open .field:has(.field__input:not(:placeholder-shown)) .field__label {
+    opacity: 0;
+    transition: opacity var(--dur-state) ease, color var(--dur-state) ease;
+    transition-delay: 0s;
+  }
+}
+
+/* =========================================================================
+   Grid (first iteration, no Figma yet)
+   Every photo in one place. A solid view over the whole page that scrolls
+   on its own; the header sits above it, so photos pass under the name and
+   nav instead of being cut at the hairline. Same 12-column grid, laid out
+   as a sparse contact sheet (see .photos).
+   ========================================================================= */
+.page {
+  position: relative; /* the grid view is positioned against the page */
+}
+
+.header {
+  position: relative;
+  z-index: 6; /* stays on top of the grid view */
+}
+
+/* While the grid is open the header's empty area lets the pointer
+   through to the sheet, so a wheel over it scrolls the grid and a click
+   there closes an expanded photo; the links keep working. */
+.page:has(.grid-view:not([hidden])) .header {
+  pointer-events: none;
+}
+
+.page:has(.grid-view:not([hidden])) .header :is(a, button) {
+  pointer-events: auto;
+}
+.grid-view {
+  position: absolute;
+  inset: 0;
+  z-index: 5; /* above the index, below the header */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none; /* the page scrolls; a bar would sit on the margin */
+  /* Starts where the main area starts (script.js keeps --main-top equal
+     to the header's height), so the first row lands in the same place as
+     before while later rows scroll on up under the header text. */
+  padding: var(--main-top, var(--header-h)) var(--margin) var(--margin);
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.grid-view::-webkit-scrollbar {
+  display: none;
+}
+
+/* While About or Contact sits over the grid, the header band gets the
+   same frost as the panel, so the sheet reads as one frosted page under
+   the header rather than a strip of sharp photos above the panel. */
+.grid-view::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* One pixel past the main rule: --main-top is rounded, the panel
+     starts at a half pixel, and any gap between them shows the photos. */
+  height: calc(var(--sheet-top) + 1px);
+  z-index: 1;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(var(--frost));
+  backdrop-filter: blur(var(--frost));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.page:has(.about.is-open:not(.is-closing), .contact.is-open:not(.is-closing)) .grid-view::before {
+  opacity: 1;
+}
+
+/* From the desktop layout up the panel starts below the header, so over the
+   grid the band runs the full height and is the only frost: two fading
+   layers would show their overlap as a pale line. */
+@media (min-width: 1101px) {
+  .grid-view::before {
+    height: 100%;
+  }
+
+  .page:has(.grid-view.is-open) .about,
+  .page:has(.grid-view.is-open) .contact {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+
+.grid-view[hidden] {
+  display: none;
+}
+
+.grid-view.is-opening {
+  opacity: 0;
+}
+
+.grid-view.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A sparse contact sheet: every tile is two columns wide (233px), in one
+   of the gallery's two ratios (portrait 470:631 → 233 × 313, landscape
+   945:631 → 233 × 156). Rows are top-aligned with a lot of air between
+   them, and empty slots in each row give the sheet its rhythm. Placement
+   (column, row, ratio) is assigned by script.js from a pattern. */
+.photos {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: var(--sheet-gap);
+  align-items: start;
+  margin: 60px 0 var(--sheet-gap); /* the sheet starts 60px under the main hairline */
+}
+
+.photo {
+  grid-column: var(--c, 1) / span 2;
+  grid-row: var(--r, auto);
+}
+
+.photo :is(img, video) {
+  display: block;
+  width: 100%;
+  aspect-ratio: 470 / 631;
+  object-fit: cover;
+  background: var(--line-soft);
+}
+
+.photo--landscape :is(img, video) {
+  aspect-ratio: 945 / 631;
+}
+
+/* MONO: the whole sheet drains to greyscale and back, as a slow
+   crossfade rather than a snap. */
+.photo :is(img, video) {
+  filter: grayscale(0);
+  transition: opacity var(--dur-state) ease, filter 0.9s ease;
+}
+
+.grid-view.is-mono .photo :is(img, video) {
+  filter: grayscale(1);
+}
+
+/* Hover: the sheet dims to the same 20% as the index rows, except the
+   tile under the pointer. Scoped to a tile being hovered so the empty
+   slots don't dim everything. */
+@media (hover: hover) {
+  .grid-view:not(.is-expanded, .is-collapsing) .photos:has(.photo:hover) .photo:not(:hover) :is(img, video) {
+    opacity: 0.2;
+  }
+}
+
+/* Expanded photo. Clicking a tile lifts a copy of its image into a fixed
+   frame that glides to the centre and grows to the photo's full frame
+   (up to 8 columns wide and the gallery's height, centred on the page);
+   the sheet behind it blurs and fades. script.js does the move;
+   the tile itself is hidden under the copy. */
+.photo {
+  cursor: pointer;
+}
+
+.lightbox {
+  position: fixed;
+  z-index: 2; /* above the tiles and the header-band frost */
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox :is(img, video) {
+  position: absolute; /* stacked, so a step can crossfade inside the frame */
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid-view.is-mono .lightbox :is(img, video) {
+  filter: grayscale(1);
+}
+
+/* While a photo is expanded the sheet stays scrollable but is held by
+   the wheel handler (script.js), so the gesture that closes the photo
+   carries straight on into scrolling. */
+
+.photo:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* While a photo is open it is the focus, so its tile shows no outline
+   until the photo has landed back on it. */
+.grid-view:is(.is-expanded, .is-collapsing) .photo:focus-visible {
+  outline: none;
+}
+
+.grid-view.is-expanded .photo :is(img, video),
+.grid-view.is-collapsing .photo :is(img, video) {
+  transition: opacity 0.6s ease, filter 0.6s ease; /* as long as the expand */
+}
+
+.grid-view.is-expanded .photo :is(img, video) {
+  opacity: 0.2;
+  filter: blur(8px);
+}
+
+/* Touch: the sheet holds still under an expanded photo (and while it
+   flies home); swipes step and close it instead (script.js). */
+.grid-view.is-expanded,
+.grid-view.is-collapsing {
+  touch-action: none;
+}
+
+.grid-view.is-expanded.is-mono .photo :is(img, video) {
+  filter: blur(8px) grayscale(1);
+}
+
+/* The source tile stays hidden while its copy is in flight, and comes
+   back without a transition the moment the copy lands. */
+.grid-view .photo.is-source :is(img, video) {
+  opacity: 0;
+  filter: none;
+  transition: none;
+}
+
+.grid-view .photo.is-landing :is(img, video) {
+  transition: none;
+}
+
+/* A tile revealed in place, without its rise (script.js, the way back). */
+.grid-view .photo.is-settled {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Tiles fade in and rise 24px as they come into view (the projects-grid
+     reveal). The first screen is staggered in reading order by script.js
+     through --i; tiles entering on scroll are staggered by their slot in
+     the row. Kept on the figure so it stays separate from the image's
+     hover opacity. */
+  .photo {
+    opacity: 0;
+    translate: 0 24px;
+    transition:
+      opacity var(--dur-reveal) var(--ease-reveal),
+      translate var(--dur-reveal) var(--ease-reveal);
+    transition-delay: calc(var(--lead, 200ms) + var(--i, 0) * 70ms);
+  }
+
+  .photo.is-in {
+    opacity: 1;
+    translate: none;
+  }
+}
+
+/* =========================================================================
+   Preloader
+   A small frame centred on the page (horizontally) and on the gallery
+   (vertically), half the size of a tile; on the phone 42% of the width,
+   centred on the screen. Photos stack inside it, each one
+   revealed top-down over the previous. script.js sizes it, runs the
+   cycle, then animates the frame onto the first tile and removes it.
+   ========================================================================= */
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.preloader__frame {
+  position: absolute;
+  overflow: hidden;
+}
+
+.preloader__frame img {
+  display: block;
+  object-fit: cover;
+}
+
+/* The markup's image list is only a source list; script.js wraps each
+   photo in a layer. The bare sources stay out of sight. */
+.preloader__frame > img {
+  display: none;
+}
+
+/* The cycle: the outgoing photo never moves. The incoming one is unmasked
+   top-down by its layer's clip on a gentle in-out, while the photo itself
+   zooms out from 114% to 100% over a slightly longer time, so the settle
+   is still running when the next photo starts to arrive. */
+.preloader__layer {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--preload-reveal) var(--ease-preload);
+}
+
+.preloader__layer.is-shown {
+  clip-path: inset(0);
+}
+
+.preloader__layer img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  scale: 1.14;
+  transition: scale calc(var(--preload-reveal) * 1.45) var(--ease-preload);
+}
+
+.preloader__layer.is-shown img {
+  scale: 1;
+}
+
+/* =========================================================================
+   Load sequence
+   `html.js` is set by an inline script, so without JS nothing is hidden.
+   `.page.is-preloading` is set while the preloader runs (name / role are
+   visible under it). `.page.is-loaded` is added by script.js when the
+   preloader frame has landed on the first tile; `.page.is-entering`
+   carries the entrance timings and is removed after the sequence so later
+   interactions use the plain transitions above.
+
+   Timeline (ms, from the preloader landing):
+                     0          first tile shows under the frame; frame removed
+                   150 + 180·k  nav link k fades in (ABOUT → CONTACT)
+                   300          second tile fades in (1.4s)
+                   500          Main hairline draws, left to right (2.2s, --ease-line)
+                   650 + 35·i   row i's hairline draws
+                   770 + 35·i   row i's text fades in
+                  1100          INDEX rises, count ticks 0 → n (0.9s, ease-out)
+   ========================================================================= */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .page:not(.is-loaded) .header__identity,
+  html.js .page:not(.is-loaded) .nav__link,
+  html.js .page:not(.is-loaded) .project__num,
+  html.js .page:not(.is-loaded) .project__name,
+  html.js .page:not(.is-loaded) .headline__count {
+    opacity: 0;
+  }
+
+  html.js .page:not(.is-loaded) .main::before,
+  html.js .page:not(.is-loaded) .project::before {
+    transform: scaleX(0);
+  }
+
+  /* Tiles: both start hidden. The first is revealed the instant the
+     preloader frame lands on it (no transition); the second fades in
+     slowly, starting as the nav arrives, and is the last thing to settle. */
+  html.js .page:not(.is-loaded) .tile {
+    opacity: 0;
+  }
+
+  .page.is-entering .tile:nth-child(2) {
+    transition: opacity 1.4s ease 300ms;
+  }
+
+  html.js .page:not(.is-loaded) .headline__title {
+    translate: 0 110%;
+  }
+
+  /* Name / role are already on screen during the preloader. */
+  html.js .page.is-preloading .header__identity {
+    opacity: 1;
+    transition: opacity 0.6s ease;
+  }
+
+  .page.is-entering .header__identity {
+    transition: opacity 0.6s ease;
+  }
+
+  /* Nav links land one after another, 180ms apart — wide enough to read
+     as a sequence rather than a single fade. */
+  .page.is-entering .nav__link {
+    transition: color var(--dur-state) ease, opacity 0.6s ease 150ms;
+  }
+  .page.is-entering .nav__link:nth-child(2) {
+    transition: color var(--dur-state) ease, opacity 0.6s ease 330ms;
+  }
+  .page.is-entering .nav__link:nth-child(3) {
+    transition: color var(--dur-state) ease, opacity 0.6s ease 510ms;
+  }
+  .page.is-entering .nav__link:nth-child(4) {
+    transition: color var(--dur-state) ease, opacity 0.6s ease 690ms;
+  }
+
+  .page.is-entering .main::before {
+    transition: transform 2.2s var(--ease-line) 500ms;
+  }
+
+  .page.is-entering .project::before {
+    transition: transform var(--dur-enter) var(--ease-out)
+      calc(650ms + var(--i, 0) * 35ms);
+  }
+
+  .page.is-entering .project__num,
+  .page.is-entering .project__name {
+    transition: opacity 0.5s ease calc(770ms + var(--i, 0) * 35ms);
+  }
+
+  .page.is-entering .headline__title {
+    transition: translate 0.7s var(--ease-out) 1100ms;
+  }
+
+  .page.is-entering .headline__count {
+    transition: opacity 0.3s ease 1100ms;
+  }
+}
+
+/* =========================================================================
+   Project page (Figma 543-399)
+   A solid panel over the main area, under the rule, opened by an index
+   row. The header gains a bottom line 20px above the rule: BACK TO
+   PROJECTS (col 1), NEXT (col 2), and the project's name and year under
+   ABOUT (cols 5, 6). Main: a filmstrip on the right edge of col 4, the
+   current media in cols 5–12 at the gallery's height — a portrait takes
+   the left half tile, a landscape the full width.
+   ========================================================================= */
+.header__project,
+.header__meta {
+  grid-row: 2;
+  align-self: end;
+  margin-bottom: var(--margin); /* the same 10px the images keep below the rule */
+  display: grid;
+  column-gap: var(--gutter);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.header__project[hidden],
+.header__meta[hidden] {
+  display: none;
+}
+
+.header__project {
+  grid-column: 1 / span 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Below this a column is narrower than BACK TO PROJECTS: NEXT follows it
+   16px on instead of waiting at col 2, where the two would overlap. */
+@media (max-width: 1240px) {
+  .header__project {
+    grid-template-columns: auto auto;
+    justify-content: start;
+    column-gap: 16px;
+  }
+}
+
+.header__project-link {
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+@media (hover: hover) {
+  .header__project:hover .header__project-link:not(:hover) {
+    color: var(--dim);
+  }
+}
+
+.header__project-link:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Name and year: 12px, −2%, mixed case — the one line in the header that
+   isn't nav type. */
+.header__meta {
+  grid-column: 5 / span 8;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+/* On the grid: the name in col 5, the count beside it in col 6, the year
+   after it in col 7. The count's figures are tabular, so it holds still
+   as it changes. */
+.header__meta {
+  align-items: last baseline;
+}
+
+.header__meta-name {
+  grid-area: 1 / 1;
+}
+
+.header__meta-count {
+  grid-area: 1 / 2;
+  font-variant-numeric: tabular-nums;
+}
+
+.header__meta-year {
+  grid-area: 1 / 3;
+}
+
+/* No year yet: it takes no place (on the phone the name and count share
+   a two-column line). */
+.header__meta > .header__meta-year:empty {
+  display: none;
+}
+
+/* A closing sheet no longer holds the line back: it comes in with the
+   sheet's fade (script.js, closeSheet). */
+.page:has(.project-view.is-open:not(.is-leaving)):not(:has(.about:not([hidden], .is-closing), .contact:not([hidden], .is-closing))) .header__project,
+.page:has(.project-view.is-open:not(.is-leaving, .is-switching)):not(:has(.about:not([hidden], .is-closing), .contact:not([hidden], .is-closing))) .header__meta {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* BACK TO PROJECTS / NEXT and the name and count fade in rising 8px
+   when a project arrives — one sweep in reading order (--k), 60ms apart
+   — and fade out rising 8px more when it leaves, 40ms apart: whole
+   letters, never cut by a mask. Carrying on upward, NEXT reads as one
+   roll: the old name drifts up and away as the new one comes up. */
+.header__project > a,
+.header__meta > span {
+  display: block;
+}
+
+.header__project > a:nth-child(1) { --k: 0; }
+.header__project > a:nth-child(2) { --k: 1; }
+.header__meta-name { --k: 2; }
+.header__meta-count { --k: 3; }
+.header__meta-year { --k: 4; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .header__project.is-arriving > a,
+  .header__meta.is-arriving > span {
+    translate: 0 8px;
+    opacity: 0;
+  }
+
+  .header__project.is-entering > a,
+  .header__meta.is-entering > span {
+    transition:
+      translate 0.8s var(--ease-out) calc(150ms + var(--k) * 60ms),
+      opacity 0.6s ease calc(150ms + var(--k) * 60ms);
+  }
+
+  /* Leaving (the page waits for it — SINK_MS / SINK_STAGGER in
+     script.js). */
+  .header__project.is-sinking > a,
+  .header__meta.is-sinking > span {
+    translate: 0 -8px;
+    opacity: 0;
+    transition:
+      translate 0.5s var(--ease-smooth) calc(var(--k) * 40ms),
+      opacity 0.4s ease calc(var(--k) * 40ms);
+  }
+
+  /* On NEXT the name and count lead their own sweep. */
+  .page:has(.project-view.is-switching) .header__meta.is-sinking > span {
+    transition-delay: calc((var(--k) - 2) * 40ms);
+  }
+
+  /* On NEXT the next project's name in the NEXT label turns over with
+     them: out with the old name, in with the new one's sweep (just
+     before the name, by reading order). */
+  .header__project.is-turning .header__project-next {
+    translate: 0 -8px;
+    opacity: 0;
+    transition: translate 0.5s var(--ease-smooth), opacity 0.4s ease;
+  }
+
+  .header__project.is-turned .header__project-next {
+    translate: 0 8px;
+    opacity: 0;
+  }
+
+  .header__project.is-turning-in .header__project-next {
+    transition:
+      translate 0.8s var(--ease-out) 150ms,
+      opacity 0.6s ease 150ms;
+  }
+}
+
+/* NEXT, continued, turns the name and count over before the page has
+   finished changing (script.js, turnHeader): the line shows meanwhile. */
+.page:has(.project-view.is-switching) .header__meta.is-early {
+  opacity: 1;
+  transition: none;
+}
+
+/* While it leaves the line itself stays at full ink (it would otherwise
+   fade with the page); each word does its own fading. */
+.page:has(.project-view.is-leaving, .project-view.is-switching) .header__project.is-sinking,
+.page:has(.project-view.is-leaving, .project-view.is-switching) .header__meta.is-sinking {
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* NEXT carries the next project's name, at the inactive grey. */
+.header__project-next {
+  display: inline-block;
+  color: var(--dim);
+  transition: color var(--dur-state) ease;
+}
+
+.header__project-link:hover .header__project-next {
+  color: var(--text);
+}
+
+/* Panels take focus when they open (script.js); the panel itself shows
+   no ring, its controls still do. */
+.about:focus,
+.contact:focus,
+.grid-view:focus,
+.project-view:focus {
+  outline: none;
+}
+
+.project-view {
+  position: absolute;
+  inset: 0.5px 0 0; /* under the main rule, which stays */
+  z-index: 4; /* under About / Contact (7) */
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  align-items: start;
+  padding: var(--margin) var(--margin) var(--margin);
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.project-view[hidden] {
+  display: none;
+}
+
+.project-view.is-opening,
+.project-view.is-closing {
+  opacity: 0;
+}
+
+/* See-through while a kept photo lands (script.js). */
+.project-view.is-bare {
+  background: transparent;
+}
+
+.project-view.is-closing {
+  pointer-events: none;
+}
+
+/* The filmstrip: 62px on the right edge of col 4, thumbs 58 × 77 four
+   apart, right-aligned. The current thumb reads in full and nudges 4px
+   left; the rest sit at 20%. Taller strips scroll inside the row. */
+.strip {
+  grid-column: 4;
+  justify-self: end;
+  align-self: stretch;
+  width: 62px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gutter);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.strip__thumb {
+  flex: 0 0 auto;
+  width: 58px;
+  aspect-ratio: 58 / 77.165;
+  border: 0;
+  padding: 0;
+  background: var(--line-soft);
+  cursor: pointer;
+  opacity: 0.2;
+  overflow: hidden;
+  transition: opacity var(--dur-state) ease, translate var(--dur-state) var(--ease-out);
+}
+
+.strip__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.strip__thumb.is-current {
+  opacity: 1;
+  translate: -4px 0;
+}
+
+/* Freshly built thumbs start invisible and arrive one after another
+   (script.js lifts .is-new once the entrance delays are in place). */
+.strip__thumb.is-new {
+  opacity: 0;
+}
+
+.strip__thumb:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* The stage: cols 5–12 at the gallery ratio. Media sits in a tile that is
+   the left half for a portrait and the full width for a landscape; a
+   change crossfades. */
+.stage {
+  grid-column: 5 / span 8;
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--gallery-ratio);
+  max-height: calc(100vh - var(--header-h) - 2 * var(--margin) - 0.5px);
+}
+
+.stage__tile {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(50% - var(--gutter) / 2);
+  overflow: hidden;
+  background: var(--line-soft);
+  opacity: 0;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.stage__tile--wide {
+  width: 100%;
+}
+
+.stage__tile.is-in {
+  opacity: 1;
+}
+
+/* The first media on open lands without its own fade: it sits exactly on
+   the index tile it came from. */
+.stage__tile--instant {
+  transition: none;
+}
+
+/* A new page's media is unmasked top-down while it settles from 105%,
+   the load sequence's media move. */
+.stage__tile--wipe {
+  opacity: 1;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1.4s var(--ease-smooth);
+}
+
+.stage__tile--wipe :is(img, video) {
+  scale: 1.05;
+  transition: scale 1.4s var(--ease-smooth);
+}
+
+.stage__tile--wipe.is-in {
+  clip-path: inset(0);
+}
+
+.stage__tile--wipe.is-in :is(img, video) {
+  scale: 1;
+}
+
+.stage__tile :is(img, video) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Opening: the panel fades, then the thumbs arrive top to bottom and the
+   stage tile a beat later. */
+@media (prefers-reduced-motion: no-preference) {
+  .project-view.is-open .strip__thumb {
+    transition: opacity var(--dur-state) ease, translate var(--dur-state) var(--ease-out);
+  }
+
+  .project-view.is-entering .strip__thumb {
+    transition: opacity 0.6s ease calc(150ms + var(--i, 0) * 50ms), translate var(--dur-state) var(--ease-out);
+  }
+}
+
+/* Phone: a full-screen panel under the header. */
+@media (max-width: 600px) {
+  /* The name and year in order; the count is the carousel's. */
+  .header__meta-name,
+  .header__meta-year,
+  .header__meta-count {
+    grid-area: auto;
+  }
+
+  .header__meta > .header__meta-count {
+    display: none;
+  }
+
+  .project-view {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+    padding-top: calc(var(--main-top, var(--header-h)) + var(--margin));
+  }
+
+  body:has(.project-view:not([hidden])) {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 600px) {
+  .header__project {
+    grid-column: 1 / span 6;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    column-gap: 16px;
+  }
+
+  .header__meta {
+    grid-column: 7 / span 6;
+    grid-template-columns: auto auto;
+    justify-content: end;
+    column-gap: 12px;
+  }
+
+  /* The phone feed (script.js buildFeed): every photo full
+     width at its own shape, 4px apart, the page scrolling through them;
+     the header counts the photo you are on. */
+  .project-view--feed .strip,
+  .project-view--feed .stage {
+    display: none;
+  }
+
+  .project-view--feed .feed,
+  .feed__pass {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+  }
+
+  .page:has(.project-view--feed) .header__meta > .header__meta-count {
+    display: block;
+  }
+
+  /* The header line stays put, as far under the nav as the photos are on
+     the projects page; the first photo starts 10px under it (script.js
+     sets the page's top from the header's height). */
+  .page:has(.project-view--feed) .header__project,
+  .page:has(.project-view--feed) .header__meta {
+    margin-top: var(--phone-air);
+  }
+
+  .feed__item {
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .feed__item--p {
+    aspect-ratio: 470 / 631;
+  }
+
+  .feed__item--l {
+    aspect-ratio: 945 / 631;
+  }
+
+  .feed__item :is(img, video) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* NEXT on the feed (script.js, continueFeed): the next project's photos
+     rise in a column of their own over the feed; its feed is laid under
+     it, out of sight, until the column lands. */
+  .feed__incoming {
+    position: fixed;
+    top: 0;
+    left: var(--margin);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  .feed.is-under {
+    visibility: hidden;
+  }
+
+  .feed__item.is-settled {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .feed__item {
+      opacity: 0;
+      translate: 0 24px;
+      transition:
+        opacity 1.12s ease calc(var(--i, 0) * 70ms),
+        translate 1.12s cubic-bezier(0.23, 1, 0.32, 1) calc(var(--i, 0) * 70ms);
+    }
+
+    .feed__item.is-in {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+}
+
+.feed {
+  display: none;
+}
+
+/* =========================================================================
+   Project page, carousel (desktop default; ?project=stage for the
+   filmstrip version)
+   The project as one infinite row across the full width, at the
+   gallery's height (cols 5–12 at 945:631 → 631 at 1440): a portrait is
+   half the gallery, a landscape all of it, 4px apart — the index tiles'
+   own sizes, so the first photo can open exactly on the tile it came
+   from before the row glides left. Each photo sits at 108% in its frame so it can drift for the
+   parallax (script.js sets its translate).
+   ========================================================================= */
+.carousel {
+  display: none;
+}
+
+.project-view--carousel .strip,
+.project-view--carousel .stage {
+  display: none;
+}
+
+.project-view--carousel .carousel {
+  display: block;
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  height: calc(((100vw - 2 * var(--margin) - 11 * var(--gutter)) / 12 * 8 + 7 * var(--gutter)) * 631 / 945);
+  max-height: calc(100vh - var(--header-h) - 2 * var(--margin) - 0.5px);
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.carousel.is-dragging {
+  cursor: grabbing;
+}
+
+.carousel.is-single {
+  cursor: auto;
+}
+
+/* Coming from the index: invisible until its photos are decoded, while
+   the index tiles show through the see-through panel. */
+.carousel.is-waiting {
+  opacity: 0;
+}
+
+.carousel__track {
+  display: flex;
+  gap: var(--gutter);
+  height: 100%;
+  will-change: transform;
+}
+
+.carousel__tile {
+  flex: 0 0 auto;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--line-soft);
+}
+
+/* While the row slides in, the end of the series (left of the arriving
+   first photo) waits out of sight. */
+.carousel__tile.is-before {
+  opacity: 0;
+}
+
+/* The 108% overscale and the drift are one transform, set by script.js. */
+.carousel__tile :is(img, video) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.08);
+  will-change: transform;
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+/* Leaving and NEXT: the row fades with the rest of the page — unless it
+   is rewinding onto the index tile, when only the end of the series,
+   crossing the index's columns 1–4, fades. */
+.project-view.is-leaving:not(.is-keeping) .carousel,
+.project-view.is-switching .carousel {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.carousel.is-returning .carousel__tile {
+  transition: opacity 0.3s ease;
+}
+
+/* NEXT (desktop): the row stays on screen and glides on;
+   the next project's photos ride in on a strip of their own over it
+   (script.js), dropped once that project's row is in place underneath. */
+.project-view.is-switching.is-continuing .carousel {
+  opacity: 1;
+  transition: none;
+}
+
+.carousel__next {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* =========================================================================
+   Page transitions
+   Pages (index, grid, project) replace each other in three beats:
+   leave (0.3s fade, nothing moves), a hold on empty paper under the
+   rule, arrive (the load sequence's moves: hairlines draw, text a beat
+   behind, media wipes top-down). The header and the main rule stay.
+   Sheets keep their own frost fade (see About / Contact).
+   ========================================================================= */
+/* ----- Leaving ----- */
+.main > .index,
+.main > .gallery,
+.photos,
+.strip,
+.stage {
+  transition: opacity 0.3s ease;
+}
+
+.main.is-leaving > .index,
+.main.is-leaving:not(.is-keeping) > .gallery {
+  opacity: 0;
+}
+
+/* Index → project with the photo kept: only the second tile goes —
+   unless the carousel takes the pair over whole. */
+.main.is-leaving.is-keeping:not(.is-keeping-all) .gallery__set.is-active .tile:nth-child(2) {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.grid-view.is-leaving .photos {
+  opacity: 0;
+}
+
+.project-view.is-leaving .strip,
+.project-view.is-switching .strip,
+.project-view.is-leaving:not(.is-keeping) .stage,
+.project-view.is-switching .stage {
+  opacity: 0;
+}
+
+/* The grid covers the main rule: leaving for it the rule fades with the
+   index, and coming back it draws in again, left to right. */
+.main::before {
+  transition: opacity 0.3s ease;
+}
+
+.main.is-leaving.is-losing-rule::before {
+  opacity: 0;
+}
+
+/* The rule stays on a project page. It can round down onto the panel's first
+   pixels, so it paints above the panel (below About and Contact, later in the
+   page at the same level or higher). */
+.main:has(> .project-view:not([hidden]))::before {
+  z-index: 5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .main.is-arriving.is-drawing-rule::before {
+    transform: scaleX(0);
+    transition: none;
+  }
+
+  .main.is-entering.is-drawing-rule::before {
+    transition: transform 1.4s var(--ease-line);
+  }
+}
+
+/* The pages arrive without a fade of their own; their content does the
+   arriving. */
+.main.is-arriving > .index,
+.main.is-arriving > .gallery,
+.main.is-entering > .index,
+.main.is-entering > .gallery {
+  transition: none;
+}
+
+/* ----- The index arriving ----- */
+@media (prefers-reduced-motion: no-preference) {
+  .main.is-arriving .project::before {
+    transform: scaleX(0);
+  }
+
+  .main.is-arriving .project__num,
+  .main.is-arriving .project__name,
+  .main.is-arriving .headline__count {
+    opacity: 0;
+  }
+
+  .main.is-arriving .headline__title {
+    translate: 0 110%;
+  }
+
+  /* Tiles arrive whole, never masked: they fade in rising 24px (the
+     grid's reveal), the second 70ms behind. A tile carried over from the
+     project page (.is-kept) stays as it is. */
+  .main.is-arriving .tile:not(.is-kept) {
+    opacity: 0;
+    translate: 0 24px;
+    transition: none; /* the starting state applies at once, whatever was running (the load sequence's fade) */
+  }
+
+  .main.is-entering .project::before {
+    transition: transform var(--dur-enter) var(--ease-out) calc(var(--i, 0) * 35ms);
+  }
+
+  .main.is-entering .project__num,
+  .main.is-entering .project__name {
+    transition: opacity 0.5s ease calc(120ms + var(--i, 0) * 35ms);
+  }
+
+  .main.is-entering .headline__title {
+    transition: translate 0.7s var(--ease-out) 450ms;
+  }
+
+  .main.is-entering .headline__count {
+    transition: opacity 0.3s ease 450ms;
+  }
+
+  .main.is-entering .tile:not(.is-kept) {
+    transition:
+      opacity 1.12s ease,
+      translate 1.12s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .main.is-entering .tile:nth-child(2):not(.is-kept) {
+    transition-delay: 70ms;
+  }
+
+}
+
+/* =========================================================================
+   Tablet and phone (no Figma frames yet; derived from the desktop grammar)
+   Below 1100px there is no hover, so the index shows one project at a time
+   and moves on by itself: laid out like desktop on a tablet, stacked on the
+   phone. The header sticks to the top and the views (About, Grid, Contact)
+   open as full-screen panels under it. Designed around 810px (tablet) and
+   390px (phone) canvases.
+   ========================================================================= */
+@media (max-width: 1100px) {
+  :root {
+    --header-h: 100px;
+  }
+
+  .page {
+    overflow: visible; /* the feed scrolls the document */
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+  }
+
+  /* Nav links spread across the row so PROJECTS and GRID never touch. */
+  .nav__link--projects { grid-column: 4; }
+  .nav__link--grid { grid-column: 6; }
+
+  /* ----- Views as full-screen panels under the sticky header ----- */
+  .page {
+    --sheet-top: var(--main-top, var(--header-h));
+  }
+
+  .about__bio {
+    padding-bottom: 0; /* the body's row gap keeps the air here */
+  }
+
+  .about,
+  .contact,
+  .grid-view {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+  }
+
+  /* Stacking under the sticky header (6): the grid at 4, About and
+     Contact at 5 so they still open over it. */
+  .grid-view {
+    z-index: 4;
+  }
+
+  .about,
+  .contact {
+    z-index: 5;
+    padding-top: calc(var(--main-top, var(--header-h)) + var(--margin));
+  }
+
+  /* Contact on anything held in the hand (a phone on its side gets this
+     layout too). The social links stay on the bottom edge of what Safari
+     shows: the panel is 100svh, the height with its toolbar showing (100vh
+     is the height with it hidden, which would put them behind it). The
+     frost moves to a fixed layer so it still covers the whole screen. */
+  .contact {
+    bottom: auto;
+    height: 100vh;
+    height: 100svh;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .contact::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(var(--frost));
+    backdrop-filter: blur(var(--frost));
+  }
+
+  .contact__social {
+    margin-top: 40px; /* never closer to SEND than this on a short screen */
+  }
+
+  /* Typed text at 16px: below that, iOS Safari zooms the page in when a
+     field is tapped. The labels stay at 12px. */
+  .field__input {
+    font-size: 16px;
+  }
+
+  /* The larger first line centres on the label, like the other fields. */
+  .field--message .field__input {
+    top: 10.6px;
+  }
+
+  /* SEND and the social links keep their small type but take a thumb: an
+     invisible area around each, 44px tall or more. */
+  .contact__send,
+  .contact__social-link {
+    position: relative;
+  }
+
+  .contact__send::after,
+  .contact__social-link::after {
+    content: "";
+    position: absolute;
+    inset: -16px;
+  }
+
+  /* The links sit on the panel's bottom margin: their area reaches up
+     instead of past the edge, where it would make the panel scroll. */
+  .contact__social-link::after {
+    inset: -22px -16px -10px;
+  }
+
+  /* The document behind a panel holds still. */
+  body:has(.about:not([hidden]), .contact:not([hidden]), .grid-view:not([hidden])) {
+    overflow: hidden;
+  }
+
+  /* About: portrait in cols 1–2, bio and awards stacked in cols 4–12. */
+  .about__portrait {
+    grid-column: 1 / span 2;
+  }
+
+  .about__body {
+    grid-column: 4 / span 9;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    row-gap: 60px;
+  }
+
+  .about__bio {
+    grid-column: 1 / span 6;
+  }
+
+  .awards {
+    width: calc((100% - 8 * var(--gutter)) / 9 * 6 + 5 * var(--gutter));
+  }
+
+  /* Contact: headline in cols 1–5, form in cols 7–12. */
+  .contact__title {
+    grid-column: 1 / span 5;
+  }
+
+  .contact__line--indent {
+    padding-left: calc((100% - 4 * var(--gutter)) / 5 + var(--gutter));
+  }
+
+  .contact__form {
+    grid-column: 1 / span 8;
+    margin-top: 60px;
+  }
+
+  .contact__social {
+    grid-column: 1 / span 8;
+  }
+
+  .contact {
+    padding-bottom: var(--margin);
+  }
+
+  /* Grid: three tiles to a row, in reading order. */
+  .photos {
+    row-gap: 80px;
+    margin: 40px 0 80px;
+  }
+
+  .photo {
+    grid-column: auto / span 4;
+    grid-row: auto;
+  }
+}
+
+/* A list taller than the gallery scrolls inside its column instead of
+   stretching the page past the screen, where the document can't reach it.
+   The column takes the gallery's height (a height of 0 keeps it out of the
+   row's sizing, and its min-height gives it the row's). INDEX stays put. */
+@media (min-width: 601px) {
+  .index {
+    height: 0;
+    min-height: 100%;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .projects {
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    overscroll-behavior: contain;
+  }
+
+  .projects::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Tablet: the desktop index, the list on the left and the photos on the
+   right, in the gallery's box. The header keeps its height for the pages
+   that open under it; the spare height goes above the main rule instead. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .page {
+    min-height: 100svh;
+  }
+
+  .header {
+    flex: 0 0 auto;
+  }
+
+  .main {
+    margin-top: auto;
+  }
+
+  .gallery {
+    max-height: calc(100svh - var(--header-h) - 2 * var(--margin) - 0.5px);
+    cursor: pointer;
+  }
+
+  /* The project page's line sits just above the rule, as on desktop: down
+     from the header by the spare height (script.js measures it). */
+  .header__project,
+  .header__meta {
+    position: relative;
+    top: var(--line-drop, 0px);
+  }
+
+  /* A column here is narrower than a project's name. */
+  .header__meta {
+    grid-template-columns: auto auto auto;
+    justify-content: start;
+    column-gap: 16px;
+    white-space: nowrap;
+  }
+
+  .header__meta-name,
+  .header__meta-count,
+  .header__meta-year {
+    grid-area: auto;
+  }
+
+  .project-view--carousel .carousel {
+    max-height: calc(100svh - var(--header-h) - 2 * var(--margin) - 0.5px);
+  }
+
+  /* About and Contact start in the same place, as on desktop: column 5, a
+     fifth of the way down. */
+  .about,
+  .contact {
+    padding-top: calc(max(var(--header-h), 20vh) + var(--margin));
+  }
+
+  /* About: the portrait two columns wide with column 4 empty after it, and
+     more air between the bio and the clients. The bio and the list take the
+     form's width. */
+  .about__portrait {
+    grid-column: 2 / span 2;
+  }
+
+  .about__body {
+    grid-column: 5 / span 8;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    row-gap: 120px;
+  }
+
+  .awards {
+    width: calc((100% - 7 * var(--gutter)) / 8 * 6 + 5 * var(--gutter));
+  }
+
+  /* Contact: the desktop's gap above the form, which takes two columns more
+     than desktop's four, narrow here. */
+
+  .contact__title {
+    grid-column: 5 / span 8;
+  }
+
+  .contact__line--indent {
+    padding-left: calc((100% - 7 * var(--gutter)) / 8 + var(--gutter));
+  }
+
+  .contact__form {
+    grid-column: 5 / span 6;
+    margin-top: 99px;
+  }
+
+  .contact__social {
+    grid-column: 5 / span 8;
+  }
+}
+
+/* Held upright there is only room for one photo at a good size: the first
+   of the set, as tall as a desktop tile is for its width. */
+@media (min-width: 601px) and (max-width: 1100px) and (orientation: portrait) {
+  .gallery {
+    aspect-ratio: 470 / 631;
+  }
+
+  .gallery__set .tile:nth-child(n + 2) {
+    display: none;
+  }
+
+  /* The project's row at the same height, so the photo carries across. */
+  .project-view--carousel .carousel {
+    height: calc(((100vw - 2 * var(--margin) - 11 * var(--gutter)) / 12 * 8 + 7 * var(--gutter)) * 631 / 470);
+  }
+}
+
+/* Phone: the index stacks, with rows and sets as direct items of the main
+   grid (see "Phone index" below). */
+@media (max-width: 600px) {
+  .main {
+    align-items: start;
+  }
+
+  /* Rows and sets become direct items of the main grid so each set can
+     be placed right under its row. */
+  .index,
+  .projects,
+  .projects li,
+  .gallery {
+    display: contents;
+  }
+
+  .headline {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding: var(--margin) 0; /* the top padding also clears round digits */
+    margin-top: 0;
+  }
+
+  .project {
+    grid-column: 1 / -1;
+    grid-row: calc(2 + var(--i, 0) * 2);
+    color: var(--text); /* nothing is dimmed without hover */
+  }
+
+  .projects li:first-child .project::before {
+    display: block; /* sits under INDEX now, not the main rule */
+  }
+
+  .projects li:has(> .project.is-active) + li .project::before {
+    background: var(--line-soft);
+  }
+
+  .gallery__set {
+    position: static;
+    pointer-events: auto; /* a tap on the photos opens the project */
+    grid-column: 1 / -1;
+    grid-row: calc(3 + var(--i, 0) * 2);
+    margin: var(--margin) 0;
+    opacity: 1;
+  }
+
+  /* Leaving: the feed's rows and sets fade directly (their wrappers are
+     display: contents). */
+  .main.is-leaving .project,
+  .main.is-leaving .headline {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .main.is-leaving .gallery__set {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .main.is-arriving .project,
+  .main.is-arriving .headline,
+  .main.is-arriving .gallery__set {
+    transition: none;
+  }
+
+  /* Tiles keep the gallery ratios: a pair at 470:631, a single at 945:631
+     (the same height either way). */
+  .tile {
+    height: auto;
+    aspect-ratio: 470 / 631;
+  }
+
+  .tile:only-child {
+    aspect-ratio: 945 / 631;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    /* Figma 551-82: a 34px header (10px top margin, name over role); the
+       index starts 80px under it (see "Phone index" below). */
+    --header-h: 34px;
+    --phone-air: 80px; /* from the nav to the photos (and the feed's header line) */
+  }
+
+  /* Identity in cols 1–5; the nav packs to the right, MONO under GRID. */
+  .header__identity {
+    grid-column: 1 / span 5;
+  }
+
+  .nav {
+    grid-column: 6 / span 7;
+    grid-template-columns: repeat(4, auto);
+    column-gap: 20px; /* Figma: 20px between the links */
+    justify-content: end;
+  }
+
+  .nav__link--about,
+  .nav__link--projects,
+  .nav__link--grid,
+  .nav__link--contact {
+    grid-column: auto;
+    grid-row: 1;
+    justify-self: auto;
+  }
+
+  .nav__mono {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  /* About (Figma projects-page-mobile-project-layout-01): the page read
+     as four columns (89.5px, 4px apart). The portrait starts as far under
+     the nav as the photos everywhere else (80px) and runs to the middle
+     of the second column; the bio sits 24px under it across three, at
+     the desktop's setting (12px on 1.2, 14px between paragraphs); the
+     awards 50px lower across all four. */
+  .about {
+    padding-top: var(--main-top, var(--header-h));
+    padding-bottom: var(--phone-air); /* the list scrolls clear of Safari's toolbar */
+    grid-template-rows: max-content max-content; /* the panel scrolls rather than squeezes them */
+  }
+
+  .about__portrait {
+    grid-column: 1 / -1;
+    width: calc((100% - 3 * var(--gutter)) * 0.375 + var(--gutter));
+    margin-top: 0;
+  }
+
+  .about__body {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    margin-top: 24px;
+    row-gap: 50px;
+  }
+
+  .about__bio {
+    grid-column: 1 / span 9;
+  }
+
+  .awards {
+    width: 100%;
+  }
+
+  /* Opening: the same order and beats as the desktop, each piece fading
+     in while it rises 24px (the grid's and the feed's reveal). */
+  @media (prefers-reduced-motion: no-preference) {
+    .about__portrait,
+    .about__bio p,
+    .about__awards-title,
+    .award {
+      translate: 0 24px;
+      transition:
+        opacity var(--dur-reveal) var(--ease-reveal),
+        translate var(--dur-reveal) var(--ease-reveal);
+    }
+
+    .about.is-open .about__portrait,
+    .about.is-open .about__bio p,
+    .about.is-open .about__awards-title,
+    .about.is-open .award {
+      translate: none;
+    }
+  }
+
+  /* Contact. The headline starts 80px under the nav like the photos
+     elsewhere, "together" under "work" (the width of "Let's ", in em so it
+     holds with the type), the form 80px below it, full width. */
+  .contact {
+    padding-top: var(--main-top, var(--header-h));
+  }
+
+  .contact__title {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .contact__line--indent {
+    padding-left: 2.598em;
+  }
+
+  .contact__form {
+    grid-column: 1 / -1;
+    margin-top: 80px;
+  }
+
+  .contact__social {
+    grid-column: 1 / -1;
+  }
+
+  /* The thank-you line at the labels' size and setting. */
+  .contact__note {
+    font-size: 12px;
+    letter-spacing: -0.02em;
+  }
+
+  /* Opening: the same order and beats as the desktop, each piece fading
+     in while it rises 24px, as on About; the hairlines still draw in. */
+  @media (prefers-reduced-motion: no-preference) {
+    .contact__title,
+    .field__label,
+    .contact__actions,
+    .contact__social {
+      translate: 0 24px;
+      transition:
+        opacity var(--dur-reveal) var(--ease-reveal),
+        translate var(--dur-reveal) var(--ease-reveal);
+    }
+
+    .contact.is-open .contact__title,
+    .contact.is-open .field__label,
+    .contact.is-open .contact__actions,
+    .contact.is-open .contact__social {
+      translate: none;
+    }
+  }
+
+  /* Grid: two tiles to a row, starting as far under the nav as the
+     index's photos (80px) and ending with the same air below the last
+     row, so it clears Safari's toolbar. */
+  .photos {
+    row-gap: 40px;
+    margin: 0 0 calc(var(--phone-air) - var(--margin));
+  }
+
+  /* The gap stays as the sheet scrolls: the header band (the frost's,
+     see .grid-view::before) is paper down to where the photos start, so
+     they pass out of sight 80px under the nav rather than up against it.
+     The expanded photo (.lightbox) sits above it. */
+  .grid-view::before {
+    height: var(--main-top, var(--header-h)); /* exactly to the first row */
+    background: var(--bg);
+    opacity: 1;
+  }
+
+  .page:has(.about.is-open:not(.is-closing), .contact.is-open:not(.is-closing)) .grid-view::before {
+    background: var(--panel);
+  }
+
+  /* Under an expanded photo the blurred sheet runs to the top of the
+     screen: the band and the header's paper fade away with the expand
+     (0.6s) and return as the photo flies home, so the blur has no edge. */
+  .header {
+    transition: background-color 0.6s ease;
+  }
+
+  .grid-view.is-expanded::before {
+    opacity: 0;
+    transition-duration: 0.6s;
+  }
+
+  .page:has(.grid-view.is-expanded) .header {
+    background: transparent;
+  }
+
+  .photo {
+    grid-column: auto / span 6;
+  }
+}
+
+/* =========================================================================
+   Phone index (Figma 551-82)
+   The desktop index restacked: the active project's tiles across the
+   width (a pair of portraits 176 + 175, or one landscape, 236 tall),
+   INDEX with its count on the second half's edge, then the list with one
+   row active. The projects advance on their own: the black line under
+   the active row fills left to right over --slide-ms, and when it lands
+   the next project takes over and its tiles crossfade (script.js listens
+   for the line's animationend). Tapping a row opens that project;
+   tapping the tiles opens the one showing.
+   ========================================================================= */
+@media (max-width: 1100px) {
+  .page {
+    --slide-ms: 5000ms;
+  }
+
+  /* The progress line: on the active row's bottom edge, over the next
+     row's hairline, filling left to right while the project is shown. */
+  .project.is-active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.5px;
+    height: 0.5px;
+    z-index: 1;
+    background: var(--line-strong);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .page.is-autoplay .project.is-active::after {
+    animation: slide-progress var(--slide-ms) linear forwards;
+  }
+
+  /* The line takes over from the solid rule under the active row. */
+  .page.is-autoplay .projects li:has(> .project.is-active) + li .project::before {
+    background: var(--line-soft);
+  }
+}
+
+@media (max-width: 600px) {
+  /* The header keeps its own 34px here: on desktop it is the band that
+     absorbs spare height, but this page is short enough to leave some. */
+  .header {
+    flex: 0 0 auto;
+  }
+
+  /* No full-width rule under the header here; the list carries its own. */
+  .main::before {
+    display: none;
+  }
+
+  .main {
+    margin-top: var(--phone-air); /* the header band's air, as on desktop */
+  }
+
+  .projects li {
+    display: block;
+  }
+
+  /* .index stays display: contents (from the touch rules), so INDEX and
+     the list are rows of the main grid under the tiles. */
+
+  /* Tiles: one box at the gallery ratio, every set stacked in it and only
+     the active one shown, as on desktop. */
+  .gallery {
+    display: block;
+    position: relative;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+    margin-top: 0;
+    aspect-ratio: var(--gallery-ratio);
+    max-height: none;
+    cursor: pointer;
+  }
+
+  .gallery__set {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    transition: opacity var(--dur-fade) ease;
+  }
+
+  .gallery__set.is-active {
+    opacity: 1;
+  }
+
+  .tile,
+  .tile:only-child {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  /* INDEX on the first half, the count on the second half's left edge
+     (x 180 at 375), 40px under the tiles. The mask keeps 3px above the
+     cap line for round digits. */
+  .headline {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+    padding: 3px 0 0;
+    margin-top: calc(40px - 3px);
+  }
+
+  .headline__count {
+    justify-self: start;
+  }
+
+  /* The list, 40px under INDEX: 28px rows, the number in the first of
+     four columns and the name from the second (x 90 at 375). */
+  .projects {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 40px;
+  }
+
+  .project {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    color: var(--dim);
+  }
+
+  .project.is-active {
+    color: var(--text);
+  }
+
+  .project__name {
+    grid-column: 2 / -1;
+  }
+
+  /* Leaving for another page: the stacked tiles fade with the rest. */
+  .main.is-leaving .gallery,
+  .main.is-leaving .projects {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .main.is-arriving .gallery,
+  .main.is-arriving .projects {
+    transition: none;
+  }
+}
+
+@keyframes slide-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Without motion there is no slider: the active row keeps a solid line. */
+@media (max-width: 600px) and (prefers-reduced-motion: reduce) {
+  .project.is-active::after {
+    transform: none;
+  }
+}
