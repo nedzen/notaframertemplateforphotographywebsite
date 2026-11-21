@@ -1,0 +1,2 @@
+import{t as e}from"./rolldown-runtime.Bi-D_2cA.mjs";function t(e,t){return{description:`Photographer and videographer based in Belgium.`,robots:`max-image-preview:large`,socialImage:`/framerusercontent.com/assets/93F5cJ0UT3DvvTRTYFCx6p1LkM.jpg`,title:`Dylan Calluy — Photographer`}}function n(){return(n=e((()=>{})))()}export{t as n,n as t};
+//# sourceMappingURL=shared-lib.DgHE3D1c.mjs.map

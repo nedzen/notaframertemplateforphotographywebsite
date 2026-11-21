@@ -1,0 +1,13 @@
+{
+  "name": "dylan-calluy-framer-mirror",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Offline mirror of https://smiling-listening-668328.framer.app/",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
