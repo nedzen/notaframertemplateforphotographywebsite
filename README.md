@@ -219,7 +219,7 @@ There is no backend. The success state is not reset without a reload.
   component embedded the HTML/CSS/JS extracted here).
 - **Typeface:** [Geist](https://vercel.com/font) by Vercel, bundled locally as
   five WOFF2 subsets under the SIL Open Font License 1.1.
-- **This repository:** an unofficial mirror/extraction made for study and
-  local use. No license is granted for the photographs, video, design or copy.
-  Contact the original author before reusing them. If you are the rights
-  holder and want content changed or removed, please open an issue.
+- **This repository:** an unofficial mirror/extraction shared as a public
+  reference and for study. No license is granted for the photographs, video,
+  design or copy. Contact the original author before reusing them. If you are
+  the rights holder and want content changed or removed, please open an issue.
