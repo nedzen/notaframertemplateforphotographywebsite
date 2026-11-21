@@ -33,16 +33,39 @@ work. Every view also has a hash route (`#about`, `#grid`, `#contact`,
 ## Files
 
 ```
-index.html     markup: navigation, index, gallery, grid, about, contact, project
-styles.css     the template's CSS (desktop, tablet, phone, reduced motion)
-script.js      media helpers, routing, transitions, preloader, grid, projects
-data.js        project media, grouped by project slug
-fonts.css      Geist 300, five unicode subsets
-assets/images  95 photographs and poster frames
-assets/video   the project clip
-assets/fonts   Geist woff2 files
-server.mjs     tiny static server with clean-URL fallback
+index.html          markup: navigation, index, gallery, grid, about, contact, project
+styles.css          CSS (desktop, tablet, phone, reduced motion)
+data.js             project media, grouped by project slug
+fonts.css           Geist 300, five unicode subsets
+assets/images       95 photographs and poster frames
+assets/video        the project clip
+assets/fonts        Geist woff2 files
+
+src/
+  main.js           entry point; starts the entrance
+  layout.js         shared DOM, breakpoints, timing, app state and hooks
+  media.js          img/video readiness, cloning and autoplay helpers
+  router.js         clean URL <-> hash mapping and document titles
+  index.js          project rows, hover previews, touch autoplay
+  sheets.js         About/Contact sheets
+  grid.js           grid placement, reveal, MONO and lightbox
+  transitions.js    page state machine, URLs and global navigation events
+  preloader.js      preloader and entrance sequence
+  form.js           contact validation and success line
+  project/
+    context.js      project DOM refs, data shape and media builders
+    page.js         header, filmstrip, stage, keyboard/wheel and stage swipe
+    feed.js         phone vertical feed
+    carousel.js     desktop/tablet carousel
+    index.js        public API for the project feature
+
+server.mjs          tiny static server with clean-URL fallback
 ```
+
+The JavaScript is native ES modules — no bundler, transpiler or dependency.
+Each feature owns its event listeners and reads shared state through
+`layout.js`; page navigation is exposed as hooks so the features do not import
+the state machine back.
 
 ## Editing
 

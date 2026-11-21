@@ -72,7 +72,10 @@ const server = http.createServer(async (req, res) => {
       "content-type": type,
       "x-content-type-options": "nosniff",
       "accept-ranges": "bytes",
-      "cache-control": type.startsWith("text/html") ? "no-cache" : "public, max-age=3600",
+      "cache-control":
+        type.startsWith("text/html") || file.includes("/src/")
+          ? "no-cache"
+          : "public, max-age=3600",
     };
 
     const range = req.headers.range;
