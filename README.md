@@ -190,8 +190,8 @@ There is no backend. The success state is not reset without a reload.
   contracts are what the interactions rely on.
 - **Images are full-resolution originals.** There are no responsive variants;
   `sized()` / `photoSize()` in `src/media.js` are no-ops kept as the hook for
-  adding `srcset` or an image CDN later. The repository is about 37 MB, mostly
-  photographs and the 12 MB clip.
+  adding `srcset` or an image CDN later. The working tree is about 37 MB,
+  mostly photographs and the 12 MB clip.
 - **The grid is shuffled on every load.** Do not rely on DOM order for the
   grid. The lightbox's arrow keys follow the shuffled DOM order. Project NEXT
   follows index-row order instead.
