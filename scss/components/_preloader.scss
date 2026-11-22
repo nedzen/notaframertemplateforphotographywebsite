@@ -1,0 +1,65 @@
+// =============================================================================
+// Preloader
+// A small frame centred on the page (horizontally) and on the gallery
+// (vertically), half the size of a tile; on the phone 42% of the width,
+// centred on the screen. Photos stack inside it, each one
+// revealed top-down over the previous. The preloader sizes it, runs the
+// cycle, then animates the frame onto the first tile and removes it.
+// =============================================================================
+
+@use "../config/tokens" as *;
+
+// Component knobs.
+$preloader-zoom: 1.14 !default; // photo scale before its layer reveals
+$preloader-settle: 1.45 !default; // the zoom's settle, relative to the clip
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: $z-preloader;
+  pointer-events: none;
+}
+
+.preloader__frame {
+  position: absolute;
+  overflow: hidden;
+}
+
+.preloader__frame img {
+  display: block;
+  object-fit: cover;
+}
+
+// The markup's image list is only a source list; the preloader wraps each
+// photo in a layer. The bare sources stay out of sight.
+.preloader__frame > img {
+  display: none;
+}
+
+// The cycle: the outgoing photo never moves. The incoming one is unmasked
+// top-down by its layer's clip on a gentle in-out, while the photo itself
+// zooms out from 114% to 100% over a slightly longer time, so the settle
+// is still running when the next photo starts to arrive.
+.preloader__layer {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--preload-reveal) var(--ease-preload);
+}
+
+.preloader__layer.is-shown {
+  clip-path: inset(0);
+}
+
+.preloader__layer img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  scale: $preloader-zoom;
+  transition: scale calc(var(--preload-reveal) * #{$preloader-settle}) var(--ease-preload);
+}
+
+.preloader__layer.is-shown img {
+  scale: 1;
+}

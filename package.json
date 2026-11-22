@@ -3,9 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Standalone vanilla HTML/CSS/JS photographer portfolio template",
+  "description": "Standalone vanilla HTML/SCSS/JS photographer portfolio template",
   "scripts": {
-    "start": "node server.mjs"
+    "build:css": "sass scss/main.scss styles.css --style=expanded --no-source-map",
+    "watch:css": "sass --watch scss/main.scss:styles.css --style=expanded --no-source-map",
+    "prestart": "npm run build:css",
+    "start": "node server.mjs",
+    "dev": "npm run build:css && node server.mjs"
+  },
+  "devDependencies": {
+    "sass": "^1.108.2"
   },
   "engines": {
     "node": ">=18"

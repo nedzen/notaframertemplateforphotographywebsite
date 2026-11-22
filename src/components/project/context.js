@@ -1,16 +1,46 @@
-/* Shared project-page references, data shape and media builders. */
+// Shared project-page references, data shape, media builders and the
+// services the project feature borrows from the app. Nothing here imports
+// another feature: the composition root injects those.
 
-import { PROJECT_MEDIA, phoneLayout, projectPanel } from "../layout.js";
-import { Media, photoSize, sized } from "../media.js";
+import { byId, qs } from "../../core/dom.js";
+import { phoneLayout } from "../../core/viewport.js";
+import { Media, photoSize, sized } from "../../core/media.js";
 
-export { PROJECT_MEDIA, projectPanel };
+export const projectPanel = byId("project");
+export { Media };
 
-export const strip = document.getElementById("project-strip");
-export const stage = document.getElementById("project-stage");
-export const projectPosition = document.getElementById("project-position");
-export const carouselEl = document.getElementById("project-carousel");
-export const carouselTrack = carouselEl.querySelector(".carousel__track");
-export const feedEl = document.getElementById("project-feed");
+export const strip = byId("project-strip");
+export const stage = byId("project-stage");
+export const projectPosition = byId("project-position");
+export const carouselEl = byId("project-carousel");
+export const carouselTrack = qs(".carousel__track", carouselEl);
+export const feedEl = byId("project-feed");
+
+let mediaData = {};
+let env = {
+  rows: [],
+  sets: new Map(),
+  state: { currentPage: "index", targetPage: "index", transitioning: false },
+  setActive: () => {},
+  closeSheets: () => {},
+  isSheetOpen: () => false,
+  isLightboxOpen: () => false,
+  goTo: () => {},
+  syncHash: () => {},
+  pathFor: (hash) => hash,
+};
+
+export const setProjectMedia = (media) => {
+  mediaData = media || {};
+};
+
+export const projectMedia = () => mediaData;
+
+export const configureProject = (services) => {
+  env = { ...env, ...services };
+};
+
+export const projectEnv = () => env;
 
 // `currentProject` is the index row; the page, feed and carousel all read it.
 export const pstate = { currentProject: null };
@@ -46,8 +76,6 @@ export function makeMedia(item) {
   video.preload = "metadata";
   return video;
 }
-
-export { Media };
 
 export function stripReady(tiles, cap = 700) {
   return Promise.all(tiles.map(({ media }) => {

@@ -1,0 +1,32 @@
+// =============================================================================
+// Dylan Calluy portfolio template — stylesheet entry point.
+//
+// Load order is the cascade. A consumer reusing one component should load
+// config/tokens, config/breakpoints and that component's partial (plus the
+// responsive partials it needs) instead of this file.
+//
+//   npm run build:css   -> styles.css
+//   npm run watch:css   -> rebuild on change
+// =============================================================================
+
+@use "base/fonts";
+@use "base/reset";
+@use "base/root";
+@use "layout/header";
+@use "layout/main";
+
+@use "components/about";
+@use "components/contact";
+@use "components/form";
+@use "components/grid";
+@use "components/lightbox";
+@use "components/preloader";
+@use "components/entrance";
+@use "components/project";
+@use "components/carousel";
+@use "components/transitions";
+
+@use "responsive/tablet";
+@use "responsive/upright";
+@use "responsive/phone";
+@use "responsive/phone-index";

@@ -7,7 +7,8 @@ The published site was built in Framer with a custom component that embedded
 plain HTML, CSS and JavaScript. This repository contains that template,
 extracted and cleaned: the Framer runtime, editor bar, analytics, CMS and
 hosting wrappers are gone. What remains is a native ES-module front end with
-local fonts, photographs and video, and no build step or runtime dependency.
+SCSS sources, local fonts, photographs and video. Dart Sass is the only build
+dependency; the browser runs plain ES modules with no runtime dependency.
 
 > **Credit:** design, photography, video and copy belong to **Dylan Calluy**.
 > Original site: <https://smiling-listening-668328.framer.app/>. Built with
@@ -17,16 +18,17 @@ local fonts, photographs and video, and no build step or runtime dependency.
 ## Quick start
 
 ```sh
-npm start            # http://localhost:4321
-# or
-node server.mjs
-# or a different port
-PORT=5000 node server.mjs
+npm install          # Dart Sass, dev only
+npm start            # builds styles.css, then http://localhost:4321
+
+npm run watch:css    # rebuild styles.css while editing SCSS
+node server.mjs      # serve without rebuilding
+PORT=5000 node server.mjs   # a different port
 ```
 
-Node 18+. `server.mjs` is a small static server with clean-URL fallback and
-byte-range support for the video. It is for local use, not a hardened
-production server.
+Node 18+. `npm start` runs `build:css` first (`prestart`). `server.mjs` is a
+small static server with clean-URL fallback and byte-range support for the
+video. It is for local use, not a hardened production server.
 
 ## Routes
 
@@ -41,84 +43,169 @@ production server.
 
 Routing is client-side. Clean URLs and the back/forward buttons use the
 History API; each view also has an internal hash (`#about`, `#grid`,
-`#contact`, `#japan`). `router.js` maps between the two.
+`#contact`, `#japan`). `src/app/router.js` maps between the two.
 
 ## Architecture
 
-Native ES modules, loaded directly by the browser. No bundler, transpiler or
-package dependency.
+Plain ES modules in the browser, SCSS compiled ahead of time. Dart Sass is the
+only dependency, and it is a dev dependency: `styles.css` is a build artifact,
+so production needs no build step.
 
 ```
+scss/
+  main.scss              stylesheet entry; load order is the cascade
+  config/
+    _tokens.scss         every tunable value, declared with !default
+    _breakpoints.scss    breakpoint map and media-query mixins
+    _mixins.scss         focus ring, hairlines, media fill
+  base/
+    _fonts.scss          bundled Geist faces
+    _reset.scss          element reset
+    _root.scss           :root custom properties, theme, page shell
+  layout/
+    _header.scss         header and nav
+    _main.scss           index list, headline, gallery
+  components/
+    _about.scss          _contact.scss   _form.scss
+    _grid.scss           _lightbox.scss
+    _preloader.scss      _entrance.scss
+    _project.scss        _carousel.scss  _transitions.scss
+  responsive/
+    _tablet.scss  _upright.scss  _phone.scss  _phone-index.scss
+
 src/
-  main.js          entry point; imports the features and starts the entrance
-  layout.js        shared DOM refs, breakpoints, timing, state and hooks
-  media.js         image/video readiness, cloning and autoplay helpers
-  router.js        clean URL <-> hash mapping and document titles
-  index.js         project rows, hover previews and touch autoplay
-  sheets.js        About/Contact sheets
-  grid.js          grid placement, scroll reveal, MONO and lightbox
-  transitions.js   page state machine, URLs and global navigation events
-  preloader.js     preloader and entrance sequence
-  form.js          contact validation and success line
-  project/
-    context.js     shared project refs, data shape and media builders
-    page.js        header, filmstrip, stage, wheel/keys and stage swipe
-    feed.js        phone vertical feed
-    carousel.js    desktop/tablet carousel
-    index.js       public API for the project feature
+  main.js                composition root
+  core/
+    config.js            JS mirrors of SCSS tokens (durations, ratios)
+    dom.js               selectors, px, rect frames
+    media.js             readiness, cloning, autoplay
+    motion.js            reduced motion, wait, spring, cubic-bezier, count-up
+    viewport.js          breakpoint media queries
+  app/
+    context.js           app DOM refs, mutable state, hooks, mainTop
+    router.js            clean URL <-> hash mapping and titles
+    transitions.js       page state machine, URLs and Escape
+  components/
+    grid/
+      index.js           createGrid
+      placement.js       contact-sheet pattern and shuffle
+      reveal.js          scroll reveal and video visibility
+      lightbox.js        createLightbox
+      mono.js            MONO toggle
+    project/
+      context.js         project refs, data builders, injected services
+      page.js            header, filmstrip, stage, wheel/keys, swipe
+      carousel.js        desktop/tablet row
+      feed.js            phone vertical feed
+      index.js           public API
+    index-list.js        project rows, hover previews, autoplay
+    sheets.js            About/Contact sheets
+    preloader.js         preloader cycle and entrance
+    contact-form.js      validation and success line
 ```
 
-Import direction:
+Dependency rule: a component imports only `src/core/*` and its own files.
+Components never import the app or another component. `src/main.js` builds the
+instances and injects what they need:
 
 ```
 main.js
-├── router.js
-├── index.js ──────────► layout.js, media.js
-├── sheets.js ─────────► layout.js
-├── grid.js ───────────► layout.js, sheets.js, media.js
-├── project/index.js ──┬─ page.js ─────► carousel.js, context.js
-│                      ├─ feed.js ─────► context.js
-│                      └─ carousel.js ─► context.js
-├── transitions.js ────► every feature, layout.js, router.js
-├── form.js
-└── preloader.js ──────► transitions.js, router.js, index.js, layout.js, media.js
+├── createIndexList(...)   rows, hover, autoplay
+├── createSheets(...)      About/Contact
+├── createGrid(...)        placement, reveal, lightbox, MONO
+├── initProjectPage()      header, stage, feed/carousel
+├── createTransitions(...) page machine, URLs, Escape
+└── createPreloader(...)   entrance
 ```
 
-Simplified: feature-to-feature imports (for example `page.js` also imports
-`index.js`, `sheets.js` and `grid.js`) are omitted for readability.
+`src/app/transitions.js` is the only module that knows `index`, `grid` and
+`project` coexist. It receives the three instances and returns
+`{ goTo, applyRoute, syncHash, syncCurrent, syncLayers }`. The project feature
+gets callbacks through `configureProject({ rows, sets, state, setActive,
+closeSheets, isSheetOpen, isLightboxOpen, goTo, syncHash, pathFor })`, so it
+does not import the index, sheets or grid.
 
-`transitions.js` owns the page state machine (`index`, `grid`, `project`) and
-imports the feature modules. Features never import `transitions.js`; they call
-navigation through the `hooks` object in `layout.js`
-(`hooks.goTo`, `hooks.syncHash`, `hooks.syncCurrent`, …). `preloader.js` is the
-one startup module that imports `applyRoute` directly.
+`src/app/context.js` holds the app's DOM refs, mutable state
+(`state.activeRow`, `state.currentPage`, …) and navigation hooks.
+`src/core/config.js` mirrors the JS-visible values in
+`scss/config/_tokens.scss`: change both when tuning those values.
 
-`layout.js` also owns the mutable app state (`state.activeRow`,
-`state.currentPage`, `state.currentProject`, …), the breakpoints
-(`1100px` tablet, `600px` phone, portrait-upright tablet) and the reduced-motion
-query. `project/context.js` holds the project-side equivalents.
+### Design tokens
+
+`scss/config/_tokens.scss` declares every parameter with `!default`, so a
+consumer can override the kit without editing it:
+
+```scss
+@use "config/tokens" with (
+  $margin: 16px,
+  $gutter: 6px,
+  $color-text: #111
+);
+```
+
+It covers margins, gutter, columns, header height, sheet gap, ratios,
+breakpoints, palette (light and dark), type, easings, durations, the z-index
+scale and component knobs (grid tile span, reveal stagger, form heights).
+Values that change at runtime or from JS stay CSS custom properties in
+`scss/base/_root.scss` (`--main-top`, `--i`, `--c`, `--r`, `--lead`, theme
+colours).
+
+### Reusing a component
+
+Each component takes its own DOM and options and returns a small API:
+
+```js
+import { createGrid } from "/src/components/grid/index.js";
+
+const grid = createGrid({
+  root: document.querySelector("#grid"),
+  photosRoot: document.querySelector("#photos"),
+  monoButton: document.querySelector("#nav-mono"),
+  beforeReveal: () => {},
+  getHeaderHeight: () => 0,
+});
+
+grid.reveal();       // reveal the sheet when it becomes visible
+grid.cleanup();      // disconnect observers, close the lightbox
+grid.hasExpanded();  // is a photo open?
+grid.collapse(true); // close without a flight
+```
+
+The grid markup contract is one scrolling root containing
+`.photos > figure.photo[data-orient="p"|"l"]` with an `img` or `video` inside.
+Its styles are `scss/components/_grid.scss` and `_lightbox.scss`; load
+`scss/config/*` and those partials. For the lightbox alone, use
+`createLightbox({ container, photos })` from
+`src/components/grid/lightbox.js`.
 
 ### Project layouts
 
 The project page has three rendering engines:
 
-- `project/page.js` — header line, filmstrip, stage and the desktop wheel/keyboard
-  controls when the carousel is off.
-- `project/carousel.js` — the desktop/tablet horizontal row (spring motion,
-  drag, NEXT handoff).
-- `project/feed.js` — the phone vertical feed.
+- `components/project/page.js` — header line, filmstrip, stage and the desktop
+  wheel/keyboard controls when the carousel is off.
+- `components/project/carousel.js` — the desktop/tablet horizontal row (spring
+  motion, drag, NEXT handoff).
+- `components/project/feed.js` — the phone vertical feed.
 
-`carouselOn()` and `feedOn()` in `project/context.js` choose between them.
-Append `?project=stage` to a project URL to disable the carousel and use the
-plain stage layout.
+`carouselOn()` and `feedOn()` in `components/project/context.js` choose between
+them. Append `?project=stage` to a project URL to disable the carousel and use
+the plain stage layout.
 
 ## Editing
 
-- **Copy, project names, gallery, grid and About text:** `index.html`.
+- **Copy, project rows, gallery, grid and About text:** `index.html`.
 - **Project media:** `data.js`, grouped by project slug.
-- **Colours, spacing, type and motion:** `styles.css` (`:root` at the top).
-- **Routing and titles:** `src/router.js`.
-- **Page transitions and global keys:** `src/transitions.js`.
+- **Colours, spacing, type and motion:** `scss/config/_tokens.scss`. Values
+  scripts also read are mirrored in `src/core/config.js`.
+- **Component styles:** `scss/components/*.scss`, `scss/layout/*.scss` and the
+  breakpoint overrides in `scss/responsive/*.scss`.
+- **Routing and titles:** `src/app/router.js`.
+- **Page transitions and global keys:** `src/app/transitions.js`.
+- **Grid, reveal and lightbox:** `src/components/grid/*`.
+- **Project page, carousel and feed:** `src/components/project/*`.
+- **After any SCSS change:** `npm run build:css` (`npm start` does it). Never
+  hand-edit `styles.css`; it is generated.
 
 ### Adding a project
 
@@ -188,9 +275,11 @@ There is no backend. The success state is not reset without a reload.
 - **The markup and CSS came from the published bundle.** They are readable and
   commented, but they are not an official source tree. Class names and DOM
   contracts are what the interactions rely on.
+- **`styles.css` is generated from `scss/`.** Edit the partials, not the CSS.
+  `npm start` rebuilds it; use `npm run watch:css` while styling.
 - **Images are full-resolution originals.** There are no responsive variants;
-  `sized()` / `photoSize()` in `src/media.js` are no-ops kept as the hook for
-  adding `srcset` or an image CDN later. The working tree is about 37 MB,
+  `sized()` / `photoSize()` in `src/core/media.js` are no-ops kept as the hook
+  for adding `srcset` or an image CDN later. The working tree is about 37 MB,
   mostly photographs and the 12 MB clip.
 - **The grid is shuffled on every load.** Do not rely on DOM order for the
   grid. The lightbox's arrow keys follow the shuffled DOM order. Project NEXT
@@ -199,8 +288,8 @@ There is no backend. The success state is not reset without a reload.
   then runs a photo cycle. With reduced motion it is skipped. First paint can
   take a few seconds on a cold load.
 - **No per-route SSR or metadata.** Every path receives the same `index.html`;
-  `router.js` changes `document.title` after load. Search engines and social
-  cards see the home description for every route.
+  `src/app/router.js` changes `document.title` after load. Search engines and
+  social cards see the home description for every route.
 - **No Framer runtime, editor bar or analytics.** The "Edit Content" overlay
   and Framer badge are gone; the site also makes no third-party requests.
 - **Disabled carousel switch:** `?project=stage` is a debugging/alternate

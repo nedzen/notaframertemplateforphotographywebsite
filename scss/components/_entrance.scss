@@ -1,0 +1,109 @@
+// =============================================================================
+// Load sequence
+// `html.js` is set by an inline script, so without JS nothing is hidden.
+// `.page.is-preloading` is set while the preloader runs (name / role are
+// visible under it). `.page.is-loaded` is added by components/preloader.js when the
+// preloader frame has landed on the first tile; `.page.is-entering`
+// carries the entrance timings and is removed after the sequence so later
+// interactions use the plain transitions above.
+//
+// Timeline (ms, from the preloader landing):
+//                   0          first tile shows under the frame; frame removed
+//                 150 + 180·k  nav link k fades in (ABOUT → CONTACT)
+//                 300          second tile fades in (1.4s)
+//                 500          Main hairline draws, left to right (2.2s, --ease-line)
+//                 650 + 35·i   row i's hairline draws
+//                 770 + 35·i   row i's text fades in
+//                1100          INDEX rises, count ticks 0 → n (0.9s, ease-out)
+// =============================================================================
+
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// Component knobs (the timeline's stagger values).
+$enter-nav-lead: 150ms !default;
+$enter-nav-step: 180ms !default;
+$enter-row-line-lead: 650ms !default;
+$enter-row-text-lead: 770ms !default;
+$enter-row-step: 35ms !default;
+$enter-headline-lead: 1100ms !default;
+
+@include motion {
+  html.js .page:not(.is-loaded) .header__identity,
+  html.js .page:not(.is-loaded) .nav__link,
+  html.js .page:not(.is-loaded) .project__num,
+  html.js .page:not(.is-loaded) .project__name,
+  html.js .page:not(.is-loaded) .headline__count {
+    opacity: 0;
+  }
+
+  html.js .page:not(.is-loaded) .main::before,
+  html.js .page:not(.is-loaded) .project::before {
+    transform: scaleX(0);
+  }
+
+  // Tiles: both start hidden. The first is revealed the instant the
+  // preloader frame lands on it (no transition); the second fades in
+  // slowly, starting as the nav arrives, and is the last thing to settle.
+  html.js .page:not(.is-loaded) .tile {
+    opacity: 0;
+  }
+
+  .page.is-entering .tile:nth-child(2) {
+    transition: opacity 1.4s ease 300ms;
+  }
+
+  html.js .page:not(.is-loaded) .headline__title {
+    translate: 0 110%;
+  }
+
+  // Name / role are already on screen during the preloader.
+  html.js .page.is-preloading .header__identity {
+    opacity: 1;
+    transition: opacity 0.6s ease;
+  }
+
+  .page.is-entering .header__identity {
+    transition: opacity 0.6s ease;
+  }
+
+  // Nav links land one after another, 180ms apart — wide enough to read
+  // as a sequence rather than a single fade.
+  .page.is-entering .nav__link {
+    transition: color var(--dur-state) ease, opacity 0.6s ease $enter-nav-lead;
+  }
+  .page.is-entering .nav__link:nth-child(2) {
+    transition: color var(--dur-state) ease,
+      opacity 0.6s ease #{$enter-nav-lead + $enter-nav-step};
+  }
+  .page.is-entering .nav__link:nth-child(3) {
+    transition: color var(--dur-state) ease,
+      opacity 0.6s ease #{$enter-nav-lead + $enter-nav-step * 2};
+  }
+  .page.is-entering .nav__link:nth-child(4) {
+    transition: color var(--dur-state) ease,
+      opacity 0.6s ease #{$enter-nav-lead + $enter-nav-step * 3};
+  }
+
+  .page.is-entering .main::before {
+    transition: transform 2.2s var(--ease-line) 500ms;
+  }
+
+  .page.is-entering .project::before {
+    transition: transform var(--dur-enter) var(--ease-out)
+      calc(#{$enter-row-line-lead} + var(--i, 0) * #{$enter-row-step});
+  }
+
+  .page.is-entering .project__num,
+  .page.is-entering .project__name {
+    transition: opacity 0.5s ease calc(#{$enter-row-text-lead} + var(--i, 0) * #{$enter-row-step});
+  }
+
+  .page.is-entering .headline__title {
+    transition: translate 0.7s var(--ease-out) $enter-headline-lead;
+  }
+
+  .page.is-entering .headline__count {
+    transition: opacity 0.3s ease $enter-headline-lead;
+  }
+}

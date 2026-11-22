@@ -1,0 +1,106 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =============================================================================
+// Index page — desktop (1440 × 800 reference)
+//
+// Layout guide: 12 columns, auto width, 10px margin, 4px gutter.
+// At 1440 that makes one column 114.67px; four columns (with three gutters)
+// are 471px, three are 352px, eight are 945px — the widths used below are
+// all expressed as column spans so they stay on-grid at other widths.
+//
+// Motion: a load sequence only. Hover stays a plain
+// crossfade with a static rule. Everything sits behind
+// prefers-reduced-motion.
+// =============================================================================
+
+:root {
+  --margin: #{$margin};
+  --gutter: #{$gutter};
+
+  // Light theme (default)
+  --bg: #{$color-bg};
+  --text: #{$color-text};
+  --dim: #{$color-dim}; // inactive rows
+  --muted: #{$color-muted}; // the role line under the name
+  --line-soft: #{$color-line-soft}; // hairlines
+  --line-strong: #{$color-line-strong}; // the rule under the active row
+  --ink-copy: #{$color-ink-copy}; // running text (about)
+  --panel: #{$color-panel}; // frosted overlay (About, Contact, the header band under them)
+  --frost: #{$frost}; // its blur — the same as the grid's behind an expanded photo
+
+  // Header height on the reference frame (main starts at y=148.5). On
+  // taller screens the header grows past this so the gallery can keep
+  // its 945:631 ratio; it never shrinks below it.
+  --header-h: #{$header-height};
+  --gallery-ratio: #{$gallery-ratio};
+  --sheet-gap: #{$sheet-gap}; // grid view: air between rows of the contact sheet
+
+  // Motion
+  --ease-out: #{$ease-out};
+  --ease-smooth: #{$ease-smooth}; // soft in, soft out
+  // For long strokes: a visible start, quick middle, soft landing. Pure
+  // ease-out jumps 40% of the way in the first tenth of the time, which
+  // hides where a long line begins.
+  --ease-line: #{$ease-line};
+  // Strong ease-out with a long tail: most of the travel early, then a
+  // slow glide home.
+  --dur-state: #{$dur-state}; // row colour
+  --dur-fade: #{$dur-fade}; // image crossfade
+  --dur-enter: #{$dur-enter}; // row hairlines on load
+  --preload-reveal: #{$dur-preload}; // preloader: one photo's clip time (its zoom runs 1.45× longer)
+  --ease-preload: #{$ease-preload}; // preloader: the clip's and the zoom's curve, a gentle in-out
+  --dur-reveal: #{$dur-reveal}; // grid: scroll-in fade and rise
+  --ease-reveal: #{$ease-reveal}; // smooth, long deceleration
+}
+
+// Dark palette — reference only, not wired to any toggle. Preview with
+// data-theme="dark" on <html>.
+:root[data-theme="dark"] {
+  --bg: #{$color-dark-bg};
+  --text: #{$color-dark-text};
+  --dim: #{$color-dark-dim};
+  --muted: #{$color-dark-muted};
+  --line-soft: #{$color-dark-line-soft};
+  --line-strong: #{$color-dark-line-strong};
+}
+
+// On desktop nothing on the page scrolls, so the document is locked and
+// can't rubber-band when a wheel reaches it (the project page steps its
+// media on the wheel). Touch sizes scroll the document instead.
+@include above(desktop) {
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
+// Base text style: 10px, 120% line height, no tracking, uppercase.
+.page {
+  // Where About and Contact start. Usually the main rule; on a squarer
+  // window, where the header grows to keep the gallery's ratio, no further
+  // down than a fifth of the screen.
+  --sheet-top: min(var(--main-top, var(--header-h)), max(var(--header-h), 20vh));
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg);
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+// ---------- The grid ----------
+// Header and Main both sit on the same 12-column grid so the nav links
+// and the gallery tiles share column edges.
+.header,
+.main {
+  display: grid;
+  grid-template-columns: repeat(#{$columns}, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding-left: var(--margin);
+  padding-right: var(--margin);
+}

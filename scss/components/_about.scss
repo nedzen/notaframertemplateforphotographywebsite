@@ -1,0 +1,199 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =============================================================================
+// About (Figma 512-753)
+//
+// A frosted panel over the whole main area, below the header, on the
+// same 12-column grid. Portrait in col 3, bio in cols 5–7, awards in the
+// lower half of cols 5–12. Opened from the nav; the index stays
+// underneath, dimmed and blurred. Contact (below) shares the panel.
+// =============================================================================
+
+// Component tunables
+$portrait-ratio: "115 / 154" !default;
+$about-gap: 14px !default;
+$bio-bottom-pad: 40px !default;
+$award-row-height: 28px !default;
+$about-fade: 0.7s !default;
+$line-draw: 1.8s !default;
+
+.about,
+.contact {
+  position: absolute;
+  inset: calc(var(--sheet-top) - var(--main-top, var(--header-h))) 0 0; // up from the rule, by what --sheet-top saves
+  overflow-y: auto; // a short window scrolls rather than clips
+  scrollbar-width: none;
+  z-index: $z-sheet; // above the grid view (5), which may be open underneath
+  display: grid;
+  grid-template-columns: repeat(#{$columns}, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding: 0 var(--margin) var(--margin);
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(var(--frost));
+  backdrop-filter: blur(var(--frost));
+  opacity: 1;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.about[hidden],
+.contact[hidden] {
+  display: none;
+}
+
+.about.is-closing,
+.contact.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.about.is-opening,
+.contact.is-opening {
+  opacity: 0;
+}
+
+// Portrait: one column wide (115px), 154 tall, 10px below the rule.
+.about__portrait {
+  grid-column: 3;
+  margin-top: var(--margin);
+  aspect-ratio: #{$portrait-ratio};
+  overflow: hidden;
+}
+
+.about__portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
+}
+
+// Cols 5–12, split into two equal halves: bio on top, awards below.
+.about__body {
+  grid-column: 5 / span 8;
+  display: grid;
+  // Two equal halves, unless the bio needs more: then it pushes the list
+  // down rather than running into it.
+  grid-template-rows: minmax(max-content, 1fr) 1fr;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  margin-top: var(--margin);
+  min-height: 0;
+}
+
+// Bio: 3 columns (352px), 12px, −2%, justified, 14px between paragraphs.
+// Running text is the one place on the page that isn't uppercase.
+.about__bio {
+  grid-row: 1;
+  grid-column: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  gap: $about-gap;
+  padding-bottom: $bio-bottom-pad; // the least air above the list
+  color: var(--ink-copy);
+  font-size: $font-size-bio;
+  line-height: $line-height-base;
+  letter-spacing: $tracking-tight;
+  text-align: justify;
+  text-transform: none;
+}
+
+.about__awards {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: $about-gap;
+  align-self: start;
+}
+
+// Header row spans all 8 columns; the list spans 4 (470px).
+.about__awards-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: $award-row-height;
+  font-size: $font-size-base;
+  font-weight: $font-weight;
+  line-height: $line-height-base;
+}
+
+// The rule under AWARDS is a pseudo-element so it can draw in from the
+// left like the main hairline on the index.
+.about__awards-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+}
+
+// Award rows share the bio's text setting: 12px, −2%, not uppercase.
+.awards {
+  list-style: none;
+  width: calc(50% - var(--gutter) / 2);
+  color: var(--ink-copy);
+  font-size: $font-size-bio;
+  letter-spacing: $tracking-tight;
+  text-transform: none;
+}
+
+.award {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: $award-row-height;
+  border-bottom: 0.5px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.award__year {
+  color: var(--text);
+}
+
+// Opening: the panel fades in as a sheet, then its content arrives in
+// order — portrait, the bio paragraph by paragraph, the awards header,
+// the rows. Closing fades the whole sheet at once.
+@include motion {
+  .about__portrait,
+  .about__bio p,
+  .about__awards-title,
+  .award {
+    opacity: 0;
+    transition: opacity $about-fade ease;
+  }
+
+  .about.is-open .about__portrait,
+  .about.is-open .about__bio p,
+  .about.is-open .about__awards-title,
+  .about.is-open .award {
+    opacity: 1;
+  }
+
+  .about.is-open .about__portrait { transition-delay: 100ms; }
+  .about.is-open .about__bio p:nth-child(1) { transition-delay: 220ms; }
+  .about.is-open .about__bio p:nth-child(2) { transition-delay: 300ms; }
+  .about.is-open .about__bio p:nth-child(3) { transition-delay: 380ms; }
+  .about.is-open .about__bio p:nth-child(4) { transition-delay: 460ms; }
+  .about.is-open .about__awards-title { transition-delay: 520ms; }
+
+  // The AWARDS rule draws left → right on the main hairline's curve,
+  // starting with the header text. Shorter than the index's 2.2s since
+  // the line is two thirds the length.
+  .about__awards-title::after {
+    transform: scaleX(0);
+    transition: transform $line-draw var(--ease-line);
+  }
+
+  .about.is-open .about__awards-title::after {
+    transform: scaleX(1);
+    transition-delay: 520ms;
+  }
+  .about.is-open .award:nth-child(1) { transition-delay: 600ms; }
+  .about.is-open .award:nth-child(2) { transition-delay: 670ms; }
+  .about.is-open .award:nth-child(3) { transition-delay: 740ms; }
+  .about.is-open .award:nth-child(4) { transition-delay: 810ms; }
+}

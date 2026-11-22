@@ -1,0 +1,134 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =============================================================================
+// Contact (Figma 543-2)
+//
+// The same frosted panel. Headline in cols 5–7 with its second line
+// indented one column; the form 100px under it in cols 5–8 as 40px rows
+// with a hairline on top and a dimmed 12px label centred in the row;
+// SEND 80px under the last row; social links on the panel's bottom edge,
+// one column each.
+// =============================================================================
+
+// Component tunables
+$form-offset-top: 100px !default;
+$social-row-height: 14px !default;
+$contact-fade: 0.7s !default;
+
+// Rows: headline, form, free space, social links pinned to the bottom.
+.contact {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.contact__title {
+  grid-column: 5 / span 3;
+  grid-row: 1;
+  margin-top: var(--margin);
+  font-size: $font-size-headline;
+  font-weight: $font-weight;
+  line-height: 1;
+  letter-spacing: $tracking-tight;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+.contact__line {
+  display: block;
+}
+
+// One column plus a gutter, measured inside the 3-column span.
+.contact__line--indent {
+  padding-left: calc((100% - 2 * var(--gutter)) / 3 + var(--gutter));
+}
+
+.contact__form {
+  grid-column: 5 / span 4;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  margin-top: $form-offset-top; // Figma: 100px from the headline's baseline
+}
+
+// INSTAGRAM, LINKEDIN, X: a 4-column sub-grid over the form's span, so
+// each link starts on a page column (5, 6, 7). 14px row, 10px type, on
+// the panel's bottom margin.
+.contact__social {
+  grid-column: 5 / span 4;
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  align-items: center;
+  height: $social-row-height;
+  list-style: none;
+}
+
+.contact__social-link {
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+.contact__social-link:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+// Same hover grammar as the nav: the others dim.
+@include hover {
+  .contact__social:hover .contact__social-link:not(:hover) {
+    color: var(--dim);
+  }
+}
+
+.contact__actions {
+  height: 12px;
+}
+
+.contact__send {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  text-transform: inherit;
+  cursor: pointer;
+  transition: color var(--dur-state) ease;
+}
+
+.contact__send:hover,
+.contact__send:focus-visible {
+  color: var(--muted);
+}
+
+.contact__send:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+.contact__note {
+  color: var(--ink-copy);
+  text-transform: none;
+}
+
+// Opening: the sheet fades in, then the headline, then each row's
+// hairline draws in with its label a beat behind, then SEND. (The field
+// half of this sequence lives with the form.)
+@include motion {
+  .contact__title,
+  .contact__actions,
+  .contact__social {
+    opacity: 0;
+    transition: opacity $contact-fade ease;
+  }
+
+  .contact.is-open .contact__title,
+  .contact.is-open .contact__actions,
+  .contact.is-open .contact__social {
+    opacity: 1;
+  }
+
+  .contact.is-open .contact__title { transition-delay: 100ms; }
+  .contact.is-open .contact__actions { transition-delay: 600ms; }
+  .contact.is-open .contact__social { transition-delay: 700ms; }
+}

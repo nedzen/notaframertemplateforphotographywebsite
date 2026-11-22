@@ -1,0 +1,89 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =============================================================================
+// Header (y 10 → 148.5)
+//
+// The header is the flexible band: it takes whatever height the gallery
+// leaves over, so the gallery's ratio stays constant across screen sizes
+// instead of stretching with the viewport. At 1440×800 that resolves to
+// the reference 148.5px.
+// =============================================================================
+
+.header {
+  flex: 1 1 auto;
+  min-height: var(--header-h);
+  padding-top: var(--margin);
+  align-items: start;
+}
+
+.header__identity {
+  grid-column: 1 / span 4;
+  display: flex;
+  flex-direction: column;
+}
+
+.header__role {
+  color: var(--muted);
+}
+
+// Nav spans cols 5–12 and is itself an 8-column grid, so each link sits
+// at a column edge: ABOUT col 5, PROJECTS col 9, GRID col 10, CONTACT
+// right-aligned to the last column.
+.nav {
+  grid-column: 5 / span 8;
+  display: grid;
+  grid-template-columns: repeat(#{$nav-columns}, minmax(0, 1fr));
+  column-gap: var(--gutter);
+}
+
+.nav__link--about { grid-column: 1; }
+.nav__link--projects { grid-column: 5; }
+.nav__link--grid { grid-column: 6; }
+.nav__link--contact { grid-column: 8; justify-self: end; }
+
+.nav__link {
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+@include hover {
+  .nav:hover .nav__link:not(:hover) {
+    color: var(--dim);
+  }
+}
+
+// Grid-only control: sits under GRID on the nav's second line (level with
+// the role under the name) and is only there while the grid is open. The
+// word stays MONO; muted when off, black when on.
+.nav__mono {
+  grid-column: 6;
+  grid-row: 2;
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--muted);
+  text-transform: inherit;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) ease, color var(--dur-state) ease;
+}
+
+.nav__mono:hover,
+.nav__mono:focus-visible,
+.nav__mono[aria-pressed="true"] {
+  color: var(--text);
+}
+
+.nav__mono:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: 2px;
+}
+
+.page:has(.grid-view.is-open:not(.is-leaving)):not(:has(.about:not([hidden]), .contact:not([hidden]))) .nav__mono {
+  opacity: 1;
+  pointer-events: auto;
+}

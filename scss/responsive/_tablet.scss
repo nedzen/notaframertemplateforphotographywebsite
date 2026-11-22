@@ -1,0 +1,202 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =========================================================================
+// Tablet and phone (no Figma frames yet; derived from the desktop grammar)
+// Below 1100px there is no hover, so the index shows one project at a time
+// and moves on by itself: laid out like desktop on a tablet, stacked on the
+// phone. The header sticks to the top and the views (About, Grid, Contact)
+// open as full-screen panels under it. Designed around 810px (tablet) and
+// 390px (phone) canvases.
+// =========================================================================
+
+@include below(touch) {
+  :root {
+    --header-h: 100px;
+  }
+
+  .page {
+    overflow: visible; // the feed scrolls the document
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+  }
+
+  // Nav links spread across the row so PROJECTS and GRID never touch.
+  .nav__link--projects { grid-column: 4; }
+  .nav__link--grid { grid-column: 6; }
+
+  // ----- Views as full-screen panels under the sticky header -----
+  .page {
+    --sheet-top: var(--main-top, var(--header-h));
+  }
+
+  .about__bio {
+    padding-bottom: 0; // the body's row gap keeps the air here
+  }
+
+  .about,
+  .contact,
+  .grid-view {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+  }
+
+  // Stacking under the sticky header (6): the grid at 4, About and
+  // Contact at 5 so they still open over it.
+  .grid-view {
+    z-index: $z-grid-touch;
+  }
+
+  .about,
+  .contact {
+    z-index: $z-sheet-touch;
+    padding-top: calc(var(--main-top, var(--header-h)) + var(--margin));
+  }
+
+  // Contact on anything held in the hand (a phone on its side gets this
+  // layout too). The social links stay on the bottom edge of what Safari
+  // shows: the panel is 100svh, the height with its toolbar showing (100vh
+  // is the height with it hidden, which would put them behind it). The
+  // frost moves to a fixed layer so it still covers the whole screen.
+  .contact {
+    bottom: auto;
+    height: 100vh;
+    height: 100svh;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .contact::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(var(--frost));
+    backdrop-filter: blur(var(--frost));
+  }
+
+  .contact__social {
+    margin-top: 40px; // never closer to SEND than this on a short screen
+  }
+
+  // Typed text at 16px: below that, iOS Safari zooms the page in when a
+  // field is tapped. The labels stay at 12px.
+  .field__input {
+    font-size: 16px;
+  }
+
+  // The larger first line centres on the label, like the other fields.
+  .field--message .field__input {
+    top: 10.6px;
+  }
+
+  // SEND and the social links keep their small type but take a thumb: an
+  // invisible area around each, 44px tall or more.
+  .contact__send,
+  .contact__social-link {
+    position: relative;
+  }
+
+  .contact__send::after,
+  .contact__social-link::after {
+    content: "";
+    position: absolute;
+    inset: -16px;
+  }
+
+  // The links sit on the panel's bottom margin: their area reaches up
+  // instead of past the edge, where it would make the panel scroll.
+  .contact__social-link::after {
+    inset: -22px -16px -10px;
+  }
+
+  // The document behind a panel holds still.
+  body:has(.about:not([hidden]), .contact:not([hidden]), .grid-view:not([hidden])) {
+    overflow: hidden;
+  }
+
+  // About: portrait in cols 1–2, bio and awards stacked in cols 4–12.
+  .about__portrait {
+    grid-column: 1 / span 2;
+  }
+
+  .about__body {
+    grid-column: 4 / span 9;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    row-gap: 60px;
+  }
+
+  .about__bio {
+    grid-column: 1 / span 6;
+  }
+
+  .awards {
+    width: calc((100% - 8 * var(--gutter)) / 9 * 6 + 5 * var(--gutter));
+  }
+
+  // Contact: headline in cols 1–5, form in cols 7–12.
+  .contact__title {
+    grid-column: 1 / span 5;
+  }
+
+  .contact__line--indent {
+    padding-left: calc((100% - 4 * var(--gutter)) / 5 + var(--gutter));
+  }
+
+  .contact__form {
+    grid-column: 1 / span 8;
+    margin-top: 60px;
+  }
+
+  .contact__social {
+    grid-column: 1 / span 8;
+  }
+
+  .contact {
+    padding-bottom: var(--margin);
+  }
+
+  // Grid: three tiles to a row, in reading order.
+  .photos {
+    row-gap: 80px;
+    margin: 40px 0 80px;
+  }
+
+  .photo {
+    grid-column: auto / span #{$grid-touch-span};
+    grid-row: auto;
+  }
+}
+
+// A list taller than the gallery scrolls inside its column instead of
+// stretching the page past the screen, where the document can't reach it.
+// The column takes the gallery's height (a height of 0 keeps it out of the
+// row's sizing, and its min-height gives it the row's). INDEX stays put.
+@media (min-width: 601px) {
+  .index {
+    height: 0;
+    min-height: 100%;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .projects {
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    overscroll-behavior: contain;
+  }
+
+  .projects::-webkit-scrollbar {
+    display: none;
+  }
+}

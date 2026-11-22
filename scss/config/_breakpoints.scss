@@ -1,0 +1,68 @@
+// Breakpoint helpers.
+//
+//   @include below(touch) { ... }   -> max-width: 1100px
+//   @include above(desktop) { ... } -> min-width: 1101px
+//   @include between(phone, touch)  -> 601px .. 1100px
+//   @include hover { ... }          -> (hover: hover)
+//   @include motion { ... }         -> (prefers-reduced-motion: no-preference)
+//   @include still { ... }          -> (prefers-reduced-motion: reduce)
+
+@use "sass:map";
+@use "tokens" as *;
+
+$breakpoints: (
+  desktop: $bp-desktop,
+  touch: $bp-touch,
+  phone: $bp-phone,
+  project-narrow: $bp-project-narrow,
+) !default;
+
+@function bp($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error "Unknown breakpoint `#{$name}`. Add it to $breakpoints.";
+  }
+  @return map.get($breakpoints, $name);
+}
+
+@mixin above($name) {
+  @media (min-width: bp($name)) {
+    @content;
+  }
+}
+
+@mixin below($name) {
+  @media (max-width: bp($name)) {
+    @content;
+  }
+}
+
+@mixin between($from, $to) {
+  @media (min-width: bp($from)) and (max-width: bp($to)) {
+    @content;
+  }
+}
+
+@mixin hover {
+  @media (hover: hover) {
+    @content;
+  }
+}
+
+@mixin motion {
+  @media (prefers-reduced-motion: no-preference) {
+    @content;
+  }
+}
+
+@mixin still {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// Tablet held upright: one photo at a time.
+@mixin upright {
+  @media (min-width: 601px) and (max-width: 1100px) and (orientation: portrait) {
+    @content;
+  }
+}

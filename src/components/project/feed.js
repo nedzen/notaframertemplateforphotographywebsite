@@ -1,21 +1,33 @@
-/* Project page on phones: the vertical feed. */
+// Project page on phones: the vertical feed.
 
-import { Media } from "../media.js";
-import { GUTTER, projectPanel, reduceMotion, spring } from "../layout.js";
-import { PROJECT_MEDIA, UNFOLD, clamp01, feedEl, feedOn, makeMedia, projectPosition, stripReady } from "./context.js";
+import { Media } from "../../core/media.js";
+import { qs } from "../../core/dom.js";
+import { layout } from "../../core/config.js";
+import { reduceMotion, spring } from "../../core/motion.js";
+import {
+  UNFOLD,
+  clamp01,
+  feedEl,
+  feedOn,
+  makeMedia,
+  projectMedia,
+  projectPanel,
+  projectPosition,
+  stripReady,
+} from "./context.js";
 
-/* ---------- Project page: phone feed ----------
-   Every photo of the project stacked full width at its own shape (a
-   portrait 470:631, a landscape 945:631), 4px apart; the page scrolls
-   through them and each fades in rising 24px as it arrives (the grid's
-   reveal; the first screen staggered 70ms). Like the desktop row it never
-   ends: nearing the end, the series is laid on again, and the header's
-   count wraps with it. Videos play only while on screen. */
+// Every photo of the project stacked full width at its own shape (a
+// portrait 470:631, a landscape 945:631), `gutter` apart; the page scrolls
+// through them and each fades in rising 24px as it arrives (the grid's
+// reveal; the first screen staggered). Like the desktop row it never
+// ends: nearing the end, the series is laid on again, and the header's
+// count wraps with it. Videos play only while on screen.
 let feedCleanup = () => {};
+let feedNext = null;
 
 function buildFeed(row) {
   feedCleanup();
-  const data = PROJECT_MEDIA[row.dataset.project];
+  const data = projectMedia()[row.dataset.project];
   if (!data || !data.media.length) return;
   const n = data.media.length;
   const items = []; // every figure laid so far, in order
@@ -54,9 +66,10 @@ function buildFeed(row) {
     stops.push(Media.playWhenVisible(pass, projectPanel));
   };
 
-  // The header line stays under the nav (styles.css); the first photo
-  // starts 10px under it, where the header ends.
-  const place = () => (projectPanel.style.paddingTop = `${document.querySelector(".header").getBoundingClientRect().bottom}px`);
+  // The header line stays under the nav (scss/components/_project.scss);
+  // the first photo starts 10px under it, where the header ends.
+  const place = () =>
+    (projectPanel.style.paddingTop = `${qs(".header").getBoundingClientRect().bottom}px`);
   place();
   feedEl.style.transform = "";
   lay();
@@ -135,7 +148,7 @@ function buildFeed(row) {
 // lands; the next project's feed is laid underneath and shown as the
 // column goes. Resolves on the hand-over.
 const SPRING_FEED_NEXT = spring(1.0, 0);
-let feedNext = null;
+
 function dropFeedNext() {
   if (!feedNext) return;
   cancelAnimationFrame(feedNext.raf);
@@ -145,11 +158,11 @@ function dropFeedNext() {
 }
 
 async function continueFeed(row, onArriving = () => {}) {
-  const data = PROJECT_MEDIA[row.dataset.project];
+  const data = projectMedia()[row.dataset.project];
   if (!data || !data.media.length) return;
   dropFeedNext();
   const H = window.innerHeight;
-  const rest = document.querySelector(".header").getBoundingClientRect().bottom; // where the first photo rests
+  const rest = qs(".header").getBoundingClientRect().bottom; // where the first photo rests
   const width = feedEl.getBoundingClientRect().width;
   // The outgoing photos on screen, and where the last of them ends.
   const figs = [...feedEl.querySelectorAll(".feed__item")];
@@ -186,17 +199,17 @@ async function continueFeed(row, onArriving = () => {}) {
     fig.appendChild(media);
     column.appendChild(fig);
     tiles.push({ fig, media });
-    filled += width * (item.o === "l" ? 631 / 945 : 631 / 470) + GUTTER;
+    filled += width * (item.o === "l" ? 631 / 945 : 631 / 470) + layout.gutter;
   }
   projectPanel.appendChild(column);
   tiles.forEach((t) => (t.y = t.fig.offsetTop));
-  const next = { column, tiles, raf: 0, onLanded: null };
+  const next = { column, tiles, raf: 0, onLanded: null, landed: false };
   feedNext = next;
   await stripReady(tiles);
   if (feedNext !== next) return;
-  const start = edge + GUTTER; // the incoming first photo, just below the last one
+  const start = edge + layout.gutter; // the incoming first photo, just below the last one
   const travel = start - rest;
-  const from = lastHeight + GUTTER;
+  const from = lastHeight + layout.gutter;
   let handed = false;
   const render = (y) => {
     const out = clamp01(y / travel);
@@ -204,7 +217,7 @@ async function continueFeed(row, onArriving = () => {}) {
     if (!handed) {
       feedEl.style.transform = `translate3d(0, ${(-y).toFixed(2)}px, 0)`;
       outgoing.forEach((o) => {
-        const pull = UNFOLD * out * (edge + GUTTER - o.top);
+        const pull = UNFOLD * out * (edge + layout.gutter - o.top);
         o.f.style.transform = pull > 0.01 ? `translate3d(0, ${(-pull).toFixed(2)}px, 0)` : "";
       });
     }
@@ -259,8 +272,6 @@ async function continueFeed(row, onArriving = () => {}) {
     next.raf = requestAnimationFrame(step);
   });
 }
-
-
 
 export { buildFeed, continueFeed, dropFeedNext };
 export const cleanupFeed = () => feedCleanup();

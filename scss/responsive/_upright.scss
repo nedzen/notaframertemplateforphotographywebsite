@@ -1,0 +1,111 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// Tablet: the desktop index, the list on the left and the photos on the
+// right, in the gallery's box. The header keeps its height for the pages
+// that open under it; the spare height goes above the main rule instead.
+@media (min-width: 601px) and (max-width: 1100px) {
+  .page {
+    min-height: 100svh;
+  }
+
+  .header {
+    flex: 0 0 auto;
+  }
+
+  .main {
+    margin-top: auto;
+  }
+
+  .gallery {
+    max-height: calc(100svh - var(--header-h) - 2 * var(--margin) - 0.5px);
+    cursor: pointer;
+  }
+
+  // The project page's line sits just above the rule, as on desktop: down
+  // from the header by the spare height (app/context.js measures it).
+  .header__project,
+  .header__meta {
+    position: relative;
+    top: var(--line-drop, 0px);
+  }
+
+  // A column here is narrower than a project's name.
+  .header__meta {
+    grid-template-columns: auto auto auto;
+    justify-content: start;
+    column-gap: 16px;
+    white-space: nowrap;
+  }
+
+  .header__meta-name,
+  .header__meta-count,
+  .header__meta-year {
+    grid-area: auto;
+  }
+
+  .project-view--carousel .carousel {
+    max-height: calc(100svh - var(--header-h) - 2 * var(--margin) - 0.5px);
+  }
+
+  // About and Contact start in the same place, as on desktop: column 5, a
+  // fifth of the way down.
+  .about,
+  .contact {
+    padding-top: calc(max(var(--header-h), 20vh) + var(--margin));
+  }
+
+  // About: the portrait two columns wide with column 4 empty after it, and
+  // more air between the bio and the clients. The bio and the list take the
+  // form's width.
+  .about__portrait {
+    grid-column: 2 / span 2;
+  }
+
+  .about__body {
+    grid-column: 5 / span 8;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    row-gap: 120px;
+  }
+
+  .awards {
+    width: calc((100% - 7 * var(--gutter)) / 8 * 6 + 5 * var(--gutter));
+  }
+
+  // Contact: the desktop's gap above the form, which takes two columns more
+  // than desktop's four, narrow here.
+
+  .contact__title {
+    grid-column: 5 / span 8;
+  }
+
+  .contact__line--indent {
+    padding-left: calc((100% - 7 * var(--gutter)) / 8 + var(--gutter));
+  }
+
+  .contact__form {
+    grid-column: 5 / span 6;
+    margin-top: 99px;
+  }
+
+  .contact__social {
+    grid-column: 5 / span 8;
+  }
+}
+
+// Held upright there is only room for one photo at a good size: the first
+// of the set, as tall as a desktop tile is for its width.
+@include upright {
+  .gallery {
+    aspect-ratio: #{$ratio-portrait};
+  }
+
+  .gallery__set .tile:nth-child(n + 2) {
+    display: none;
+  }
+
+  // The project's row at the same height, so the photo carries across.
+  .project-view--carousel .carousel {
+    height: calc(((100vw - 2 * var(--margin) - 11 * var(--gutter)) / 12 * 8 + 7 * var(--gutter)) * 631 / 470);
+  }
+}

@@ -1,0 +1,135 @@
+// =============================================================================
+// Page transitions
+//
+// Pages (index, grid, project) replace each other in three beats:
+// leave (0.3s fade, nothing moves), a hold on empty paper under the
+// rule, arrive (the load sequence's moves: hairlines draw, text a beat
+// behind, media wipes top-down). The header and the main rule stay.
+// Sheets keep their own frost fade (see About / Contact).
+// =============================================================================
+
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// ----- Leaving -----
+.main > .index,
+.main > .gallery,
+.photos,
+.strip,
+.stage {
+  transition: opacity $dur-exit ease;
+}
+
+.main.is-leaving > .index,
+.main.is-leaving:not(.is-keeping) > .gallery {
+  opacity: 0;
+}
+
+// Index → project with the photo kept: only the second tile goes —
+// unless the carousel takes the pair over whole.
+.main.is-leaving.is-keeping:not(.is-keeping-all) .gallery__set.is-active .tile:nth-child(2) {
+  opacity: 0;
+  transition: opacity $dur-exit ease;
+}
+
+.grid-view.is-leaving .photos {
+  opacity: 0;
+}
+
+.project-view.is-leaving .strip,
+.project-view.is-switching .strip,
+.project-view.is-leaving:not(.is-keeping) .stage,
+.project-view.is-switching .stage {
+  opacity: 0;
+}
+
+// The grid covers the main rule: leaving for it the rule fades with the
+// index, and coming back it draws in again, left to right.
+.main::before {
+  transition: opacity $dur-exit ease;
+}
+
+.main.is-leaving.is-losing-rule::before {
+  opacity: 0;
+}
+
+// The rule stays on a project page. It can round down onto the panel's first
+// pixels, so it paints above the panel (below About and Contact, later in the
+// page at the same level or higher).
+.main:has(> .project-view:not([hidden]))::before {
+  z-index: $z-grid;
+}
+
+@include motion {
+  .main.is-arriving.is-drawing-rule::before {
+    transform: scaleX(0);
+    transition: none;
+  }
+
+  .main.is-entering.is-drawing-rule::before {
+    transition: transform 1.4s var(--ease-line);
+  }
+}
+
+// The pages arrive without a fade of their own; their content does the
+// arriving.
+.main.is-arriving > .index,
+.main.is-arriving > .gallery,
+.main.is-entering > .index,
+.main.is-entering > .gallery {
+  transition: none;
+}
+
+// ----- The index arriving -----
+@include motion {
+  .main.is-arriving .project::before {
+    transform: scaleX(0);
+  }
+
+  .main.is-arriving .project__num,
+  .main.is-arriving .project__name,
+  .main.is-arriving .headline__count {
+    opacity: 0;
+  }
+
+  .main.is-arriving .headline__title {
+    translate: 0 110%;
+  }
+
+  // Tiles arrive whole, never masked: they fade in rising 24px (the
+  // grid's reveal), the second 70ms behind. A tile carried over from the
+  // project page (.is-kept) stays as it is.
+  .main.is-arriving .tile:not(.is-kept) {
+    opacity: 0;
+    translate: 0 $grid-reveal-rise;
+    transition: none; // the starting state applies at once, whatever was running (the load sequence's fade)
+  }
+
+  .main.is-entering .project::before {
+    transition: transform var(--dur-enter) var(--ease-out) calc(var(--i, 0) * 35ms);
+  }
+
+  .main.is-entering .project__num,
+  .main.is-entering .project__name {
+    transition: opacity 0.5s ease calc(120ms + var(--i, 0) * 35ms);
+  }
+
+  .main.is-entering .headline__title {
+    transition: translate 0.7s var(--ease-out) 450ms;
+  }
+
+  .main.is-entering .headline__count {
+    transition: opacity $dur-exit ease 450ms;
+  }
+
+  .main.is-entering .tile:not(.is-kept) {
+    transition:
+      opacity $dur-reveal ease,
+      translate $dur-reveal $ease-reveal;
+  }
+
+  .main.is-entering .tile:nth-child(2):not(.is-kept) {
+    transition-delay: $grid-reveal-stagger;
+  }
+
+}

@@ -1,0 +1,120 @@
+// =============================================================================
+// Design tokens — every value a consumer may tune.
+//
+// Override before loading the kit, e.g.
+//   @use "config/tokens" with ($margin: 16px, $color-text: #111);
+//
+// Runtime values (theme switching, JS-driven layout vars) are emitted as CSS
+// custom properties in base/_root.scss; these are the build-time source.
+// =============================================================================
+
+@use "sass:math";
+
+// -----------------------------------------------------------------------------
+// Grid and page rhythm
+// -----------------------------------------------------------------------------
+$margin: 10px !default; // outer page margin
+$gutter: 4px !default; // column gutter
+$columns: 12 !default; // page grid
+$header-height: 148.5px !default; // reference header band
+$sheet-gap: 120px !default; // grid view: air between rows
+$gallery-ratio: "945 / 631" !default;
+$ratio-portrait: "470 / 631" !default;
+$ratio-landscape: "945 / 631" !default;
+
+// -----------------------------------------------------------------------------
+// Breakpoints
+// -----------------------------------------------------------------------------
+$bp-desktop: 1101px !default; // above this the desktop layout applies
+$bp-touch: 1100px !default; // tablet and below
+$bp-phone: 600px !default;
+$bp-project-narrow: 1240px !default; // project header runs out of room
+
+// -----------------------------------------------------------------------------
+// Colour — light theme (default)
+// -----------------------------------------------------------------------------
+$color-bg: #ffffff !default;
+$color-text: #000000 !default;
+$color-dim: rgba(0, 0, 0, 0.2) !default; // inactive rows
+$color-muted: rgba(0, 0, 0, 0.4) !default; // secondary lines
+$color-line-soft: rgba(0, 0, 0, 0.2) !default; // hairlines
+$color-line-strong: #000000 !default; // rule under the active row
+$color-ink-copy: #101111 !default; // running text (about)
+$color-panel: rgba(255, 255, 255, 0.95) !default; // frosted sheet
+$frost: 8px !default; // its blur, and the grid's behind a photo
+
+// Dark theme reference (data-theme="dark" on <html>)
+$color-dark-bg: #0e0e0e !default;
+$color-dark-text: #f2f2f2 !default;
+$color-dark-dim: rgba(255, 255, 255, 0.3) !default;
+$color-dark-muted: rgba(255, 255, 255, 0.5) !default;
+$color-dark-line-soft: rgba(255, 255, 255, 0.18) !default;
+$color-dark-line-strong: #ffffff !default;
+
+// -----------------------------------------------------------------------------
+// Type
+// -----------------------------------------------------------------------------
+$font-family: "Geist", sans-serif !default;
+$font-weight: 300 !default;
+$font-size-base: 10px !default;
+$line-height-base: 1.2 !default;
+$tracking-tight: -0.02em !default;
+$font-size-headline: 32px !default;
+$font-size-count: 14px !default;
+$font-size-bio: 12px !default;
+$font-size-label: 12px !default;
+
+// -----------------------------------------------------------------------------
+// Motion
+// -----------------------------------------------------------------------------
+$ease-out: cubic-bezier(0.22, 1, 0.36, 1) !default;
+$ease-smooth: cubic-bezier(0.65, 0, 0.35, 1) !default; // lightbox flights
+$ease-line: cubic-bezier(0.35, 0.1, 0.25, 1) !default;
+$ease-reveal: cubic-bezier(0.23, 1, 0.32, 1) !default;
+$ease-preload: cubic-bezier(0.45, 0, 0.15, 1) !default;
+
+$dur-state: 0.35s !default; // row colour
+$dur-fade: 0.45s !default; // image crossfade
+$dur-enter: 0.9s !default; // row hairlines on load
+$dur-reveal: 1.12s !default; // grid scroll-in
+$dur-preload: 0.7s !default; // one photo's clip
+$dur-expand: 0.6s !default; // grid lightbox flight
+$dur-step: 0.7s !default; // lightbox step
+$dur-exit: 0.3s !default; // page leaving
+$dur-hold: 0.12s !default; // empty paper between pages
+$dur-sink: 0.5s !default; // project header per word
+
+// JS mirrors (ms), for components that animate alongside CSS
+$ms-fade: 450 !default;
+$ms-expand: 600 !default;
+$ms-step: 700 !default;
+$ms-exit: 300 !default;
+$ms-hold: 120 !default;
+
+// -----------------------------------------------------------------------------
+// Layering
+// -----------------------------------------------------------------------------
+$z-lightbox: 2 !default;
+$z-project: 4 !default;
+$z-grid: 5 !default;
+$z-grid-touch: 4 !default;
+$z-sheet: 7 !default;
+$z-sheet-touch: 5 !default;
+$z-header: 6 !default;
+$z-preloader: 10 !default;
+
+// -----------------------------------------------------------------------------
+// Component knobs
+// -----------------------------------------------------------------------------
+$grid-tile-span: 2 !default; // columns per grid tile
+$grid-columns-gap: $gutter !default;
+$grid-touch-span: 4 !default; // 3 across below the desktop breakpoint
+$grid-phone-span: 6 !default; // 2 across on the phone
+$grid-reveal-rise: 24px !default;
+$grid-reveal-stagger: 70ms !default;
+$grid-reveal-lead: 200ms !default;
+$grid-lightbox-max-columns: 8 !default;
+$nav-columns: 8 !default;
+$sheet-close-delay: $ms-fade !default;
+$form-field-height: 40px !default;
+$form-message-height: 120px !default;

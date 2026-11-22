@@ -1,0 +1,243 @@
+// =============================================================================
+// Grid (first iteration, no Figma yet)
+// Every photo in one place. A solid view over the whole page that scrolls
+// on its own; the header sits above it, so photos pass under the name and
+// nav instead of being cut at the hairline. Same 12-column grid, laid out
+// as a sparse contact sheet (see .photos).
+// =============================================================================
+
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+@use "../config/mixins" as *;
+
+// Component knobs (SHEET-era values, not shared tokens).
+$grid-sheet-offset: 60px !default; // sheet start under the main hairline
+$grid-mono-dur: 0.9s !default; // greyscale crossfade
+$grid-dim: 0.2 !default; // dimmed tiles: hover, and behind an expanded photo
+
+.page {
+  position: relative; // the grid view is positioned against the page
+}
+
+.header {
+  position: relative;
+  z-index: $z-header; // stays on top of the grid view
+}
+
+// While the grid is open the header's empty area lets the pointer
+// through to the sheet, so a wheel over it scrolls the grid and a click
+// there closes an expanded photo; the links keep working.
+.page:has(.grid-view:not([hidden])) .header {
+  pointer-events: none;
+}
+
+.page:has(.grid-view:not([hidden])) .header :is(a, button) {
+  pointer-events: auto;
+}
+.grid-view {
+  position: absolute;
+  inset: 0;
+  z-index: $z-grid; // above the index, below the header
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none; // the page scrolls; a bar would sit on the margin
+  // Starts where the main area starts (the grid component keeps --main-top equal
+  // to the header's height), so the first row lands in the same place as
+  // before while later rows scroll on up under the header text.
+  padding: var(--main-top, var(--header-h)) var(--margin) var(--margin);
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.grid-view::-webkit-scrollbar {
+  display: none;
+}
+
+// While About or Contact sits over the grid, the header band gets the
+// same frost as the panel, so the sheet reads as one frosted page under
+// the header rather than a strip of sharp photos above the panel.
+.grid-view::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  // One pixel past the main rule: --main-top is rounded, the panel
+  // starts at a half pixel, and any gap between them shows the photos.
+  height: calc(var(--sheet-top) + 1px);
+  z-index: 1;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(var(--frost));
+  backdrop-filter: blur(var(--frost));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.page:has(.about.is-open:not(.is-closing), .contact.is-open:not(.is-closing)) .grid-view::before {
+  opacity: 1;
+}
+
+// From the desktop layout up the panel starts below the header, so over the
+// grid the band runs the full height and is the only frost: two fading
+// layers would show their overlap as a pale line.
+@include above(desktop) {
+  .grid-view::before {
+    height: 100%;
+  }
+
+  .page:has(.grid-view.is-open) .about,
+  .page:has(.grid-view.is-open) .contact {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+
+.grid-view[hidden] {
+  display: none;
+}
+
+.grid-view.is-opening {
+  opacity: 0;
+}
+
+.grid-view.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+// A sparse contact sheet: every tile is two columns wide (233px), in one
+// of the gallery's two ratios (portrait 470:631 → 233 × 313, landscape
+// 945:631 → 233 × 156). Rows are top-aligned with a lot of air between
+// them, and empty slots in each row give the sheet its rhythm. Placement
+// (column, row, ratio) is assigned by the grid component from a pattern.
+.photos {
+  display: grid;
+  grid-template-columns: repeat(#{$columns}, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: var(--sheet-gap);
+  align-items: start;
+  margin: $grid-sheet-offset 0 var(--sheet-gap); // the sheet starts 60px under the main hairline
+}
+
+.photo {
+  grid-column: var(--c, 1) / span #{$grid-tile-span};
+  grid-row: var(--r, auto);
+}
+
+.photo :is(img, video) {
+  display: block;
+  width: 100%;
+  aspect-ratio: #{$ratio-portrait};
+  object-fit: cover;
+  background: var(--line-soft);
+}
+
+.photo--landscape :is(img, video) {
+  aspect-ratio: #{$ratio-landscape};
+}
+
+// MONO: the whole sheet drains to greyscale and back, as a slow
+// crossfade rather than a snap.
+.photo :is(img, video) {
+  filter: grayscale(0);
+  transition: opacity var(--dur-state) ease, filter $grid-mono-dur ease;
+}
+
+.grid-view.is-mono .photo :is(img, video) {
+  filter: grayscale(1);
+}
+
+// Hover: the sheet dims to the same 20% as the index rows, except the
+// tile under the pointer. Scoped to a tile being hovered so the empty
+// slots don't dim everything.
+@include hover {
+  .grid-view:not(.is-expanded, .is-collapsing) .photos:has(.photo:hover) .photo:not(:hover) :is(img, video) {
+    opacity: $grid-dim;
+  }
+}
+
+// Expanded photo. Clicking a tile lifts a copy of its image into a fixed
+// frame that glides to the centre and grows to the photo's full frame
+// (up to 8 columns wide and the gallery's height, centred on the page);
+// the sheet behind it blurs and fades. The grid component does the move;
+// the tile itself is hidden under the copy.
+.photo {
+  cursor: pointer;
+}
+
+// While a photo is expanded the sheet stays scrollable but is held by
+// the wheel handler (the grid component), so the gesture that closes the photo
+// carries straight on into scrolling.
+
+.photo:focus-visible {
+  @include focus-ring;
+}
+
+// While a photo is open it is the focus, so its tile shows no outline
+// until the photo has landed back on it.
+.grid-view:is(.is-expanded, .is-collapsing) .photo:focus-visible {
+  outline: none;
+}
+
+.grid-view.is-expanded .photo :is(img, video),
+.grid-view.is-collapsing .photo :is(img, video) {
+  transition: opacity $dur-expand ease, filter $dur-expand ease; // as long as the expand
+}
+
+.grid-view.is-expanded .photo :is(img, video) {
+  opacity: $grid-dim;
+  filter: blur(#{$frost});
+}
+
+// Touch: the sheet holds still under an expanded photo (and while it
+// flies home); swipes step and close it instead (the grid component).
+.grid-view.is-expanded,
+.grid-view.is-collapsing {
+  touch-action: none;
+}
+
+.grid-view.is-expanded.is-mono .photo :is(img, video) {
+  filter: blur(#{$frost}) grayscale(1);
+}
+
+// The source tile stays hidden while its copy is in flight, and comes
+// back without a transition the moment the copy lands.
+.grid-view .photo.is-source :is(img, video) {
+  opacity: 0;
+  filter: none;
+  transition: none;
+}
+
+.grid-view .photo.is-landing :is(img, video) {
+  transition: none;
+}
+
+// A tile revealed in place, without its rise (the grid component, the way back).
+.grid-view .photo.is-settled {
+  transition: none;
+}
+
+@include motion {
+  // Tiles fade in and rise 24px as they come into view (the projects-grid
+  // reveal). The first screen is staggered in reading order by the grid component
+  // through --i; tiles entering on scroll are staggered by their slot in
+  // the row. Kept on the figure so it stays separate from the image's
+  // hover opacity.
+  .photo {
+    opacity: 0;
+    translate: 0 $grid-reveal-rise;
+    transition:
+      opacity var(--dur-reveal) var(--ease-reveal),
+      translate var(--dur-reveal) var(--ease-reveal);
+    transition-delay: calc(var(--lead, #{$grid-reveal-lead}) + var(--i, 0) * #{$grid-reveal-stagger});
+  }
+
+  .photo.is-in {
+    opacity: 1;
+    translate: none;
+  }
+}

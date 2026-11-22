@@ -1,0 +1,111 @@
+// =============================================================================
+// Project page, carousel (desktop default; ?project=stage for the filmstrip
+// version)
+//
+// The project as one infinite row across the full width, at the gallery's
+// height (cols 5–12 at 945:631 → 631 at 1440): a portrait is half the gallery,
+// a landscape all of it, 4px apart — the index tiles' own sizes, so the first
+// photo can open exactly on the tile it came from before the row glides left.
+// Each photo sits at 108% in its frame so it can drift for the parallax
+// (project/carousel.js sets its translate).
+// =============================================================================
+
+@use "../config/tokens" as *;
+
+$carousel-overscale: 1.08 !default;
+
+.carousel {
+  display: none;
+}
+
+.project-view--carousel .strip,
+.project-view--carousel .stage {
+  display: none;
+}
+
+.project-view--carousel .carousel {
+  display: block;
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  height: calc(((100vw - 2 * var(--margin) - 11 * var(--gutter)) / 12 * 8 + 7 * var(--gutter)) * 631 / 945);
+  max-height: calc(100vh - var(--header-h) - 2 * var(--margin) - 0.5px);
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.carousel.is-dragging {
+  cursor: grabbing;
+}
+
+.carousel.is-single {
+  cursor: auto;
+}
+
+// Coming from the index: invisible until its photos are decoded, while
+// the index tiles show through the see-through panel.
+.carousel.is-waiting {
+  opacity: 0;
+}
+
+.carousel__track {
+  display: flex;
+  gap: var(--gutter);
+  height: 100%;
+  will-change: transform;
+}
+
+.carousel__tile {
+  flex: 0 0 auto;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--line-soft);
+}
+
+// While the row slides in, the end of the series (left of the arriving
+// first photo) waits out of sight.
+.carousel__tile.is-before {
+  opacity: 0;
+}
+
+// The 108% overscale and the drift are one transform, set by project/carousel.js.
+.carousel__tile :is(img, video) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale($carousel-overscale);
+  will-change: transform;
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+// Leaving and NEXT: the row fades with the rest of the page — unless it
+// is rewinding onto the index tile, when only the end of the series,
+// crossing the index's columns 1–4, fades.
+.project-view.is-leaving:not(.is-keeping) .carousel,
+.project-view.is-switching .carousel {
+  opacity: 0;
+  transition: opacity $dur-exit ease;
+}
+
+.carousel.is-returning .carousel__tile {
+  transition: opacity $dur-exit ease;
+}
+
+// NEXT (desktop): the row stays on screen and glides on;
+// the next project's photos ride in on a strip of their own over it
+// (project/carousel.js), dropped once that project's row is in place underneath.
+.project-view.is-switching.is-continuing .carousel {
+  opacity: 1;
+  transition: none;
+}
+
+.carousel__next {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}

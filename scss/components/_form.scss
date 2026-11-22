@@ -1,0 +1,136 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =============================================================================
+// Contact form — fields, labels, autofill, invalid state.
+//
+// A field is a 40px row: hairline on top (a pseudo-element so it can draw
+// in), label centred, the input laid over the whole row.
+// =============================================================================
+
+// Component tunables
+$field-label-top: 13px !default;
+$message-inset-bottom: 16px !default;
+$field-fade: 0.7s !default;
+
+.field {
+  position: relative;
+  display: block;
+  height: $form-field-height;
+}
+
+.field::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+  transition: background-color var(--dur-state) ease;
+}
+
+// 12px, not uppercase, at the role line's grey: quiet, but the only thing
+// saying what the field is for, so it has to read.
+.field__label {
+  position: absolute;
+  top: $field-label-top;
+  left: 0;
+  font-size: $font-size-label;
+  line-height: $line-height-base;
+  color: var(--muted);
+  text-transform: none;
+  pointer-events: none;
+  transition: opacity var(--dur-state) ease, color var(--dur-state) ease;
+}
+
+.field__input {
+  position: absolute;
+  inset: 0.5px 0 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: $font-size-label; // typed text takes the label's size
+  color: var(--text);
+  text-transform: none;
+  outline: none;
+  resize: none;
+}
+
+// The message field is taller (40 + 80 = 120, down to SEND). Typing starts
+// where the label sits, as in the other fields, with a gap under the text.
+.field--message {
+  height: $form-message-height;
+}
+
+.field--message .field__input {
+  top: $field-label-top; // the label's
+  bottom: $message-inset-bottom;
+  line-height: $line-height-base;
+}
+
+// Autofill keeps the page's look: browsers tint a filled field (Chrome blue,
+// Safari yellow) with a background they won't let go of, so it is clipped
+// to the letters, under the ink, and its fade put off indefinitely.
+.field__input:is(:-webkit-autofill, :autofill) {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
+// The label is the placeholder: it goes once there is text. Focus and an
+// invalid field are marked on the hairline, like the active index row;
+// an invalid field's label also comes up to black.
+.field:has(.field__input:not(:placeholder-shown)) .field__label {
+  opacity: 0;
+}
+
+.field:focus-within::before,
+.field.is-invalid::before {
+  background: var(--line-strong);
+}
+
+.field.is-invalid .field__label {
+  color: var(--text);
+}
+
+// Opening: each row's hairline draws in with its label a beat behind.
+@include motion {
+  .field__label {
+    opacity: 0;
+    transition: opacity $field-fade ease;
+  }
+
+  .field::before {
+    transform: scaleX(0);
+    transition: transform var(--dur-enter) var(--ease-out), background-color var(--dur-state) ease;
+  }
+
+  .contact.is-open .field__label {
+    opacity: 1;
+  }
+
+  .contact.is-open .field::before {
+    transform: scaleX(1);
+  }
+
+  .contact.is-open .field:nth-child(1)::before { transition-delay: 220ms, 0s; }
+  .contact.is-open .field:nth-child(2)::before { transition-delay: 300ms, 0s; }
+  .contact.is-open .field:nth-child(3)::before { transition-delay: 380ms, 0s; }
+  .contact.is-open .field:nth-child(1) .field__label { transition-delay: 340ms; }
+  .contact.is-open .field:nth-child(2) .field__label { transition-delay: 420ms; }
+  .contact.is-open .field:nth-child(3) .field__label { transition-delay: 500ms; }
+
+  // Once the panel is open the label is a placeholder again: it goes
+  // on the state timing, without the entrance delay.
+  .contact.is-open .field:has(.field__input:not(:placeholder-shown)) .field__label {
+    opacity: 0;
+    transition: opacity var(--dur-state) ease, color var(--dur-state) ease;
+    transition-delay: 0s;
+  }
+}

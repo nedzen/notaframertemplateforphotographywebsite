@@ -1,0 +1,294 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// Phone: the index stacks, with rows and sets as direct items of the main
+// grid (see "Phone index" below).
+@include below(phone) {
+  .main {
+    align-items: start;
+  }
+
+  // Rows and sets become direct items of the main grid so each set can
+  // be placed right under its row.
+  .index,
+  .projects,
+  .projects li,
+  .gallery {
+    display: contents;
+  }
+
+  .headline {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding: var(--margin) 0; // the top padding also clears round digits
+    margin-top: 0;
+  }
+
+  .project {
+    grid-column: 1 / -1;
+    grid-row: calc(2 + var(--i, 0) * 2);
+    color: var(--text); // nothing is dimmed without hover
+  }
+
+  .projects li:first-child .project::before {
+    display: block; // sits under INDEX now, not the main rule
+  }
+
+  .projects li:has(> .project.is-active) + li .project::before {
+    background: var(--line-soft);
+  }
+
+  .gallery__set {
+    position: static;
+    pointer-events: auto; // a tap on the photos opens the project
+    grid-column: 1 / -1;
+    grid-row: calc(3 + var(--i, 0) * 2);
+    margin: var(--margin) 0;
+    opacity: 1;
+  }
+
+  // Leaving: the feed's rows and sets fade directly (their wrappers are
+  // display: contents).
+  .main.is-leaving .project,
+  .main.is-leaving .headline {
+    opacity: 0;
+    transition: opacity $dur-exit ease;
+  }
+
+  .main.is-leaving .gallery__set {
+    opacity: 0;
+    transition: opacity $dur-exit ease;
+  }
+
+  .main.is-arriving .project,
+  .main.is-arriving .headline,
+  .main.is-arriving .gallery__set {
+    transition: none;
+  }
+
+  // Tiles keep the gallery ratios: a pair at 470:631, a single at 945:631
+  // (the same height either way).
+  .tile {
+    height: auto;
+    aspect-ratio: #{$ratio-portrait};
+  }
+
+  .tile:only-child {
+    aspect-ratio: #{$ratio-landscape};
+  }
+}
+
+@include below(phone) {
+  :root {
+    // Figma 551-82: a 34px header (10px top margin, name over role); the
+    // index starts 80px under it (see "Phone index" below).
+    --header-h: 34px;
+    --phone-air: 80px; // from the nav to the photos (and the feed's header line)
+  }
+
+  // Identity in cols 1–5; the nav packs to the right, MONO under GRID.
+  .header__identity {
+    grid-column: 1 / span 5;
+  }
+
+  .nav {
+    grid-column: 6 / span 7;
+    grid-template-columns: repeat(4, auto);
+    column-gap: 20px; // Figma: 20px between the links
+    justify-content: end;
+  }
+
+  .nav__link--about,
+  .nav__link--projects,
+  .nav__link--grid,
+  .nav__link--contact {
+    grid-column: auto;
+    grid-row: 1;
+    justify-self: auto;
+  }
+
+  .nav__mono {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  // About (Figma projects-page-mobile-project-layout-01): the page read
+  // as four columns (89.5px, 4px apart). The portrait starts as far under
+  // the nav as the photos everywhere else (80px) and runs to the middle
+  // of the second column; the bio sits 24px under it across three, at
+  // the desktop's setting (12px on 1.2, 14px between paragraphs); the
+  // awards 50px lower across all four.
+  .about {
+    padding-top: var(--main-top, var(--header-h));
+    padding-bottom: var(--phone-air); // the list scrolls clear of Safari's toolbar
+    grid-template-rows: max-content max-content; // the panel scrolls rather than squeezes them
+  }
+
+  .about__portrait {
+    grid-column: 1 / -1;
+    width: calc((100% - 3 * var(--gutter)) * 0.375 + var(--gutter));
+    margin-top: 0;
+  }
+
+  .about__body {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    margin-top: 24px;
+    row-gap: 50px;
+  }
+
+  .about__bio {
+    grid-column: 1 / span 9;
+  }
+
+  .awards {
+    width: 100%;
+  }
+
+  // Opening: the same order and beats as the desktop, each piece fading
+  // in while it rises 24px (the grid's and the feed's reveal).
+  @include motion {
+    .about__portrait,
+    .about__bio p,
+    .about__awards-title,
+    .award {
+      translate: 0 $grid-reveal-rise;
+      transition:
+        opacity var(--dur-reveal) var(--ease-reveal),
+        translate var(--dur-reveal) var(--ease-reveal);
+    }
+
+    .about.is-open .about__portrait,
+    .about.is-open .about__bio p,
+    .about.is-open .about__awards-title,
+    .about.is-open .award {
+      translate: none;
+    }
+  }
+
+  // Contact. The headline starts 80px under the nav like the photos
+  // elsewhere, "together" under "work" (the width of "Let's ", in em so it
+  // holds with the type), the form 80px below it, full width.
+  .contact {
+    padding-top: var(--main-top, var(--header-h));
+  }
+
+  .contact__title {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .contact__line--indent {
+    padding-left: 2.598em;
+  }
+
+  .contact__form {
+    grid-column: 1 / -1;
+    margin-top: 80px;
+  }
+
+  .contact__social {
+    grid-column: 1 / -1;
+  }
+
+  // The thank-you line at the labels' size and setting.
+  .contact__note {
+    font-size: $font-size-label;
+    letter-spacing: $tracking-tight;
+  }
+
+  // Opening: the same order and beats as the desktop, each piece fading
+  // in while it rises 24px, as on About; the hairlines still draw in.
+  @include motion {
+    .contact__title,
+    .field__label,
+    .contact__actions,
+    .contact__social {
+      translate: 0 $grid-reveal-rise;
+      transition:
+        opacity var(--dur-reveal) var(--ease-reveal),
+        translate var(--dur-reveal) var(--ease-reveal);
+    }
+
+    .contact.is-open .contact__title,
+    .contact.is-open .field__label,
+    .contact.is-open .contact__actions,
+    .contact.is-open .contact__social {
+      translate: none;
+    }
+  }
+
+  // Grid: two tiles to a row, starting as far under the nav as the
+  // index's photos (80px) and ending with the same air below the last
+  // row, so it clears Safari's toolbar.
+  .photos {
+    row-gap: 40px;
+    margin: 0 0 calc(var(--phone-air) - var(--margin));
+  }
+
+  // The gap stays as the sheet scrolls: the header band (the frost's,
+  // see .grid-view::before) is paper down to where the photos start, so
+  // they pass out of sight 80px under the nav rather than up against it.
+  // The expanded photo (.lightbox) sits above it.
+  .grid-view::before {
+    height: var(--main-top, var(--header-h)); // exactly to the first row
+    background: var(--bg);
+    opacity: 1;
+  }
+
+  .page:has(.about.is-open:not(.is-closing), .contact.is-open:not(.is-closing)) .grid-view::before {
+    background: var(--panel);
+  }
+
+  // Under an expanded photo the blurred sheet runs to the top of the
+  // screen: the band and the header's paper fade away with the expand
+  // (0.6s) and return as the photo flies home, so the blur has no edge.
+  .header {
+    transition: background-color $dur-expand ease;
+  }
+
+  .grid-view.is-expanded::before {
+    opacity: 0;
+    transition-duration: $dur-expand;
+  }
+
+  .page:has(.grid-view.is-expanded) .header {
+    background: transparent;
+  }
+
+  .photo {
+    grid-column: auto / span #{$grid-phone-span};
+  }
+}
+
+// The progress line and its timing run on the touch layout (below 1100px).
+@include below(touch) {
+  .page {
+    --slide-ms: 5000ms;
+  }
+
+  // The progress line: on the active row's bottom edge, over the next
+  // row's hairline, filling left to right while the project is shown.
+  .project.is-active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.5px;
+    height: 0.5px;
+    z-index: 1;
+    background: var(--line-strong);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .page.is-autoplay .project.is-active::after {
+    animation: slide-progress var(--slide-ms) linear forwards;
+  }
+
+  // The line takes over from the solid rule under the active row.
+  .page.is-autoplay .projects li:has(> .project.is-active) + li .project::before {
+    background: var(--line-soft);
+  }
+}

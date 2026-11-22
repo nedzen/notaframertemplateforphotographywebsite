@@ -1,3 +1,6 @@
+// Media readiness, cloning and autoplay. No app state: every helper takes
+// the elements it works on.
+
 export const Media = (() => {
   const SELECTOR = "img, video";
   const isVideo = (el) => el.tagName === "VIDEO";
@@ -80,5 +83,3 @@ export const Media = (() => {
 // no-ops; they stay here as the single place to add variants later.
 export const sized = (url) => url || "";
 export const photoSize = () => 1024;
-
-

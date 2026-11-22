@@ -1,27 +1,22 @@
 /* Project page on desktop/tablet: the horizontal carousel. */
 
-import { Media } from "../media.js";
-import {
-  GUTTER,
-  reduceMotion,
-  spring,
-  sets,
-  state,
-  uprightLayout,
-  wideSingle,
-} from "../layout.js";
+import { Media } from "../../core/media.js";
+import { layout } from "../../core/config.js";
+import { reduceMotion, spring } from "../../core/motion.js";
+import { uprightLayout, wideSingle } from "../../core/viewport.js";
 import {
   CONTINUE_TURN,
-  PROJECT_MEDIA,
+  UNFOLD,
+  UNFOLD_RELEASE,
   clamp01,
   carouselEl,
   carouselTrack,
   makeMedia,
+  projectEnv,
+  projectMedia,
   projectPosition,
   pstate,
   stripReady,
-  UNFOLD,
-  UNFOLD_RELEASE,
 } from "./context.js";
 
 /* ---------- Project page: carousel ----------
@@ -70,14 +65,14 @@ const mod = (n, m) => ((n % m) + m) % m;
 // A portrait is half the gallery, a landscape all of it. Upright the gallery
 // is one portrait, so a landscape is two, and a lone one is the whole row.
 function carouselGeometry(data) {
-  const col = (carouselEl.clientWidth - 11 * GUTTER) / 12;
-  const galleryWidth = col * 8 + 7 * GUTTER;
+  const col = (carouselEl.clientWidth - 11 * layout.gutter) / 12;
+  const galleryWidth = col * 8 + 7 * layout.gutter;
   const wide = wideSingle(data);
-  const anchor = wide ? 0 : col * 4 + 4 * GUTTER; // where it rests alone: column 5
-  const portrait = uprightLayout.matches ? galleryWidth : (galleryWidth - GUTTER) / 2;
-  const landscape = portrait * 2 + GUTTER;
+  const anchor = wide ? 0 : col * 4 + 4 * layout.gutter; // where it rests alone: column 5
+  const portrait = uprightLayout.matches ? galleryWidth : (galleryWidth - layout.gutter) / 2;
+  const landscape = portrait * 2 + layout.gutter;
   const widths = wide ? [carouselEl.clientWidth] : data.media.map((m) => (m.o === "l" ? landscape : portrait));
-  const setWidth = widths.reduce((a, b) => a + b, 0) + GUTTER * widths.length;
+  const setWidth = widths.reduce((a, b) => a + b, 0) + layout.gutter * widths.length;
   return { anchor, widths, setWidth, single: widths.length === 1 };
 }
 
@@ -100,7 +95,7 @@ function carouselTile(item, width) {
 
 function buildCarousel(row, { keep = false, settled = false, handoff = null } = {}) {
   stopCarousel();
-  const data = PROJECT_MEDIA[row.dataset.project];
+  const data = projectMedia()[row.dataset.project];
   if (!data || !data.media.length) return;
   // A project of one photo or video isn't a row: it rests on cols 5–12,
   // where the index shows it, and holds still.
@@ -129,11 +124,11 @@ function buildCarousel(row, { keep = false, settled = false, handoff = null } = 
   // to arrive from the right is the first to be held out.
   let held = 0;
   if (keep) {
-    for (let i = 0; anchor + held + widths[i] + GUTTER < carouselEl.clientWidth; i++) held += widths[i] + GUTTER;
+    for (let i = 0; anchor + held + widths[i] + layout.gutter < carouselEl.clientWidth; i++) held += widths[i] + layout.gutter;
   }
   car = {
     setWidth, single, home, anchor, widths, x: home - offset, target: home - offset, v: 0, spring: SPRING_SCROLL,
-    tiles, raf: 0, last: 0, count: data.media.length, step: widths[0] + GUTTER, at: -1,
+    tiles, raf: 0, last: 0, count: data.media.length, step: widths[0] + layout.gutter, at: -1,
     opening: offset > 0, unfold: offset > 0 && !reduceMotion.matches ? { amount: 1, from: offset, held, keep } : null,
     size: [carouselEl.clientWidth, carouselEl.clientHeight],
   };
@@ -157,7 +152,7 @@ function buildCarousel(row, { keep = false, settled = false, handoff = null } = 
   if (keep) {
     // Pick a clip up where the index tile left it.
     const lead = tiles.find((t) => t.index === 0 && Math.abs(t.left - carouselPos(car.x) - anchor) < 1);
-    const from = sets.get(row.dataset.project).querySelector("video");
+    const from = projectEnv().sets.get(row.dataset.project).querySelector("video");
     if (lead && from && lead.media.tagName === "VIDEO") lead.media.currentTime = from.currentTime;
   }
 }
@@ -213,7 +208,7 @@ function returnCarousel() {
   const target = car.single ? car.home : ahead >= 0 ? car.x - mod(ahead, setWidth) : car.x + mod(-ahead, setWidth);
   const from = Math.abs(car.x - target);
   let held = 0; // the photos the index shows: a pair or one landscape
-  for (let i = 0; anchor + held + car.widths[i] + GUTTER < carouselEl.clientWidth; i++) held += car.widths[i] + GUTTER;
+  for (let i = 0; anchor + held + car.widths[i] + layout.gutter < carouselEl.clientWidth; i++) held += car.widths[i] + layout.gutter;
   Object.assign(car, {
     opening: false, target,
     unfold: { amount: 0, from: Math.max(1, from), held, keep: true },
@@ -241,7 +236,7 @@ function landCarousel() {
   car.unfold.amount = 1;
   renderCarousel();
   const lead = car.tiles.find((t) => t.index === 0 && Math.abs(t.left - carouselPos(car.x) - car.anchor) < 1);
-  const to = pstate.currentProject && sets.get(pstate.currentProject.dataset.project).querySelector("video");
+  const to = pstate.currentProject && projectEnv().sets.get(pstate.currentProject.dataset.project).querySelector("video");
   if (lead && to && lead.media.tagName === "VIDEO") to.currentTime = lead.media.currentTime;
   done();
 }
@@ -274,7 +269,7 @@ function dropNextStrip() {
 // next project's own row takes over). Capped, so a slow file can't hold
 // the page.
 async function continueCarousel(row, onArriving = () => {}, ctx = null) {
-  const data = PROJECT_MEDIA[row.dataset.project];
+  const data = projectMedia()[row.dataset.project];
   if (!car || !data || !data.media.length) return;
   // A strip still waiting to hand over (NEXT pressed twice): let the row
   // under it paint first, so dropping it shows no gap.
@@ -299,7 +294,7 @@ async function continueCarousel(row, onArriving = () => {}, ctx = null) {
     const t = carouselTile(data.media[k], widths[k]);
     track.appendChild(t.tile);
     tiles.push({ ...t, width: widths[k], left: 0 });
-    filled += widths[k] + GUTTER;
+    filled += widths[k] + layout.gutter;
   }
   carouselEl.appendChild(strip);
   tiles.forEach((t) => (t.left = t.tile.offsetLeft));
@@ -318,7 +313,7 @@ async function continueCarousel(row, onArriving = () => {}, ctx = null) {
       lastWidth = t.width;
     }
   });
-  const travel = edge + GUTTER;
+  const travel = edge + layout.gutter;
   const home = single ? anchor : 0;
   // The row's own speed carries on, but never backwards and never so fast
   // that the spring would overshoot the landing.
@@ -335,7 +330,7 @@ async function continueCarousel(row, onArriving = () => {}, ctx = null) {
       cut: edge,
       // The unfold is measured from the outgoing project's last photo, so
       // the gap between the projects opens and closes too.
-      strip: { track, tiles, start: travel + home, depth: single ? 0 : 1, from: lastWidth + GUTTER },
+      strip: { track, tiles, start: travel + home, depth: single ? 0 : 1, from: lastWidth + layout.gutter },
     };
     renderCarousel();
     renderNextStrip();
@@ -434,7 +429,7 @@ function renderCarousel() {
     // last one handed over from the index).
     const u = car.unfold;
     let shift = u ? UNFOLD * u.amount * Math.max(0, left - leadLeft - u.held) : 0;
-    if (nx && left < cut) shift += nextShift(nx, cut + GUTTER - left, false);
+    if (nx && left < cut) shift += nextShift(nx, cut + layout.gutter - left, false);
     const centre = left + shift + t.width / 2;
     // Capped so the drift (≤ 3.6%) stays inside the photo's 8% overscale.
     const drift = depth * Math.max(-1.2, Math.min(1.2, (centre - half) / half));
@@ -446,7 +441,7 @@ function renderCarousel() {
     // class instead of setting it.
     const before = (!!(car.opening || car.returning || car.landed) && left < leadLeft - 0.5) || left >= cut;
     if (t.before !== before) t.tile.classList.toggle("is-before", (t.before = before));
-    if (!car.opening && left <= ref && left + t.width + GUTTER > ref) at = t.index;
+    if (!car.opening && left <= ref && left + t.width + layout.gutter > ref) at = t.index;
   });
   if (car.ghost) renderGhost();
   if (at !== car.at && !nx) { // the outgoing count holds still as it turns over
@@ -493,7 +488,7 @@ function runCarousel(now) {
     // the page arrives — and NEXT works again — without waiting for the
     // spring's last, slow pixels.
     const junction = nx.cut - (car.x - nx.x0);
-    if (!landed && nx.ctx && junction - GUTTER + nextShift(nx, nx.strip.from, false) <= 0) {
+    if (!landed && nx.ctx && junction - layout.gutter + nextShift(nx, nx.strip.from, false) <= 0) {
       nx.ctx.handoff = { remaining: target - car.x, v: car.v, d: nx.d, strip: nx.strip };
       if (!nx.turned) {
         nx.turned = true;
@@ -645,7 +640,7 @@ let carouselResize = 0;
 window.addEventListener("resize", () => {
   clearTimeout(carouselResize);
   carouselResize = setTimeout(() => {
-    if (!car || !pstate.currentProject || state.currentPage !== "project") return;
+    if (!car || !pstate.currentProject || projectEnv().state.currentPage !== "project") return;
     if (car.returning || car.continuing) return; // a page change is waiting on it
     const [w, h] = car.size;
     if (carouselEl.clientWidth === w && carouselEl.clientHeight === h) return;

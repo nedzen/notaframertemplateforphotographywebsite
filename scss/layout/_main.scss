@@ -1,0 +1,220 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =============================================================================
+// Main (y 148.5 → 800)
+//
+// Left column: the project list and the INDEX headline. Gallery on the
+// right, cols 5–12.
+// =============================================================================
+
+// Component tunables
+$index-columns: 4 !default;
+$row-height: 28px !default;
+$headline-trim: 3px !default;
+$row-hairline-fade: 0.18s !default;
+
+.main {
+  position: relative;
+  flex: 0 0 auto; // sized by the gallery; the header flexes instead
+  padding-top: 0.5px; // room for the rule below
+  padding-bottom: var(--margin);
+}
+
+// The hairline across the top of Main (x 10 → 1430). A pseudo-element
+// rather than a border so it can draw in on load.
+.main::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--margin);
+  right: var(--margin);
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+}
+
+// Left column (cols 1–4, 471px): list on top, headline pinned to the
+// bottom edge of the gallery. Internally a 4-column grid so the 352px
+// list and headline can span three of those columns.
+.index {
+  grid-column: 1 / span 4;
+  display: grid;
+  grid-template-columns: repeat(#{$index-columns}, minmax(0, 1fr));
+  grid-template-rows: 1fr auto;
+  column-gap: var(--gutter);
+  align-content: space-between;
+}
+
+.projects {
+  grid-column: 1 / span 3;
+  list-style: none;
+  align-self: start;
+}
+
+// One row: 28px tall, number in the first column, name from the second.
+.project {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  column-gap: var(--gutter);
+  align-items: center;
+  height: $row-height;
+  color: var(--dim);
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+// Each row's hairline sits on its top edge; the first row sits directly
+// under the Main rule, so it draws none.
+.project::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+  transform-origin: left center;
+  transition: background-color $row-hairline-fade ease;
+}
+
+.projects li:first-child .project::before {
+  display: none;
+}
+
+.project.is-active {
+  color: var(--text);
+}
+
+// On hover the name nudges one gutter to the right. Tied to the pointer
+// (and keyboard focus), not to the active state, so the resting page and
+// the default row 01 sit exactly on the grid.
+.project__name {
+  transition: translate var(--dur-state) var(--ease-out);
+}
+
+@include hover {
+  .project:hover .project__name,
+  .project:focus-visible .project__name {
+    translate: var(--gutter) 0;
+  }
+}
+
+// The rule *below* the active row goes solid — that's the next row's
+// hairline.
+.projects li:has(> .project.is-active) + li .project::before {
+  background: var(--line-strong);
+}
+
+.project:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: -2px;
+}
+
+// Headline: INDEX (32px, 100% line height, -2% tracking) with the count
+// (14px, -2% tracking) at the far right of the same 3-column span. Both
+// are cap-trimmed so their cap heights top-align and INDEX's baseline
+// lands on the gallery's bottom edge. The block clips so INDEX can rise
+// out of it on load.
+.headline {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  overflow: hidden;
+  // The mask reaches a little above the cap line (padding, cancelled by
+  // the margin, so nothing moves): round digits like 8, 6, 3 or 0 rise a
+  // touch above it and would otherwise be shaved off.
+  padding-top: $headline-trim;
+  margin-top: -$headline-trim;
+}
+
+.headline__title,
+.headline__count {
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+.headline__title {
+  font-size: $font-size-headline;
+  font-weight: $font-weight;
+  line-height: 1;
+  letter-spacing: $tracking-tight;
+}
+
+.headline__count {
+  font-size: $font-size-count;
+  line-height: $line-height-base;
+  letter-spacing: $tracking-tight;
+}
+
+// Fallback when text-box-trim is unsupported: nudge so the baselines
+// still land roughly where the trimmed version puts them.
+@supports not (text-box-trim: trim-both) {
+  .headline {
+    overflow: visible;
+  }
+  .headline__title {
+    margin-bottom: -0.1em;
+  }
+  .headline__count {
+    margin-top: -0.14em;
+  }
+}
+
+// ---------- Gallery (cols 5–12, 945 × 631) ----------
+// Every project's image set is stacked in the same box and only the
+// active one is visible, so switching rows crossfades the tiles.
+.gallery {
+  grid-column: 5 / span 8;
+  position: relative;
+  margin-top: var(--margin);
+  // Width is the grid span; height follows the reference ratio so the
+  // crop is identical at every width. `align-self: start` keeps the grid
+  // from stretching the height and overriding the ratio.
+  width: 100%;
+  align-self: start;
+  aspect-ratio: var(--gallery-ratio);
+  // Short or ultra-wide viewports (wider than ~2.25:1) can't fit the
+  // full-ratio gallery above the minimum header. Cap the height there so
+  // the page never scrolls; the explicit width keeps the tiles on the
+  // grid and only the crop changes.
+  max-height: calc(100vh - var(--header-h) - 2 * var(--margin) - 0.5px);
+}
+
+.gallery__set {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: var(--gutter);
+  opacity: 0;
+  transition: opacity var(--dur-fade) ease;
+  pointer-events: none;
+}
+
+.gallery__set.is-active {
+  opacity: 1;
+  z-index: 1;
+}
+
+// One tile fills the set; two share it in halves (470 / 471).
+.tile {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--line-soft);
+  clip-path: inset(0);
+}
+
+.tile :is(img, video) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

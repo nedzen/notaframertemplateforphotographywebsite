@@ -1,12 +1,13 @@
-/* Page state machine: index ⇄ grid ⇄ project, sheets, URLs and events. */
+/* Page state machine: index ⇄ grid ⇄ project, sheets, URLs and events.
+   The composition root injects the grid, index and sheet instances. */
 
-import { Media } from "./media.js";
+import { Media } from "../core/media.js";
+import { durations } from "../core/config.js";
+import { reduceMotion, tickCount, wait } from "../core/motion.js";
+import { phoneLayout, uprightLayout } from "../core/viewport.js";
 import {
-  EXIT_MS,
-  HOLD_MS,
   PROJECT_MEDIA,
-  SINK_MS,
-  SINK_STAGGER,
+  count,
   defaultRow,
   gallery,
   gridPanel,
@@ -17,27 +18,12 @@ import {
   mainArea,
   navGrid,
   navProjects,
-  phoneLayout,
   projectPanel,
-  reduceMotion,
   rows,
   sets,
   state,
   syncMainTop,
-  tickCount,
-  uprightLayout,
-  wait,
-} from "./layout.js";
-import { setActive, syncAutoplay } from "./index.js";
-import { closeSheet, closeSheets, openSheet, sheetOpen, sheets } from "./sheets.js";
-import {
-  cleanupGrid,
-  collapsePhoto,
-  hasExpandedPhoto,
-  monoButton,
-  photos,
-  revealPhotos,
-} from "./grid.js";
+} from "./context.js";
 import {
   buildCarousel,
   buildFeed,
@@ -63,8 +49,26 @@ import {
   sweepHeaderLine,
   turnHeader,
   unloadProject,
-} from "./project/index.js";
+} from "../components/project/index.js";
 import { navigate, routeHash } from "./router.js";
+
+// The page machine is created after its components exist. It owns the
+// navigation events and returns the API the rest of the app calls.
+export function createTransitions({ grid, index, sheets: sheetApi }) {
+  const sheets = sheetApi.items;
+  const photos = grid.photos;
+  const monoButton = grid.monoButton || null;
+
+  const setActive = (row) => index.setActive(row);
+  const syncAutoplay = () => index.syncAutoplay();
+  const revealPhotos = () => grid.reveal();
+  const cleanupGrid = () => grid.cleanup();
+  const collapsePhoto = (instant) => grid.collapse(instant);
+  const hasExpandedPhoto = () => grid.hasExpanded();
+  const closeSheet = (sheet) => sheetApi.close(sheet);
+  const closeSheets = () => sheetApi.closeAll();
+  const openSheet = (sheet) => sheetApi.open(sheet);
+  const sheetOpen = (sheet) => sheetApi.isOpen(sheet);
 
 // What's under the page on screen: the index can't be reached by Tab or
 // pointer behind a project, the grid or a sheet, and its videos rest.
@@ -114,7 +118,7 @@ const pageDefs = {
     enter() {
       mainArea.classList.remove("is-arriving");
       mainArea.classList.add("is-entering");
-      if (!reduceMotion.matches) tickCount(rows.length, 450, 900);
+      if (!reduceMotion.matches) tickCount(count, rows.length, 450, 900);
       clearTimeout(indexEnterTimer); // a quick round trip: this arrival's own
       indexEnterTimer = setTimeout(() => {
         mainArea.classList.remove("is-entering", "is-drawing-rule");
@@ -169,7 +173,7 @@ const pageDefs = {
       // On NEXT the next project's name in the NEXT label turns over too.
       if (ctx.switching) headerProject.classList.add("is-turning");
       const words = ctx.switching ? 3 : 5; // name, year, count (+ BACK, NEXT)
-      const sunk = reduceMotion.matches ? Promise.resolve() : wait(SINK_MS + (words - 1) * SINK_STAGGER);
+      const sunk = reduceMotion.matches ? Promise.resolve() : wait(durations.sink + (words - 1) * durations.sinkStagger);
       // The carousel's way back: the row rewinds onto the index tile and
       // the page waits for it to land too.
       if (ctx.keep && carouselOn()) return Promise.all([sunk, returnCarousel()]);
@@ -305,8 +309,8 @@ async function goTo(name, ctx = {}) {
   // A page opened straight from the URL arrives without anything leaving.
   if (!ctx.direct) {
     const landed = pageDefs[from].exit(ctx);
-    await wait(EXIT_MS);
-    await wait(HOLD_MS);
+    await wait(durations.exit);
+    await wait(durations.hold);
     await landed; // an exit carrying a photo home holds until it lands
   }
 
@@ -451,8 +455,6 @@ function relayProject() {
 phoneLayout.addEventListener("change", relayProject);
 uprightLayout.addEventListener("change", relayProject);
 
-export { applyRoute };
-
 /* Hook assignment: feature modules call back into the page machine. */
 hooks.goTo = goTo;
 hooks.syncHash = syncHash;
@@ -469,3 +471,6 @@ hooks.afterSheetClose = () => {
   )
     sweepHeaderLine();
 };
+
+  return { goTo, applyRoute, syncHash, syncCurrent, syncLayers };
+}

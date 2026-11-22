@@ -1,0 +1,517 @@
+// =============================================================================
+// Project page (Figma 543-399)
+//
+// A solid panel over the main area, under the rule, opened by an index row.
+// The header gains a bottom line 20px above the rule: BACK TO PROJECTS (col 1),
+// NEXT (col 2), and the project's name and year under ABOUT (cols 5, 6). Main:
+// a filmstrip on the right edge of col 4, the current media in cols 5–12 at
+// the gallery's height — a portrait takes the left half tile, a landscape the
+// full width.
+// =============================================================================
+
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+@use "../config/mixins" as *;
+
+// Component tunables (not shared with other partials).
+$project-strip-width: 62px !default;
+$project-thumb-width: 58px !default;
+$project-thumb-ratio: "58 / 77.165" !default;
+$project-thumb-nudge: 4px !default;
+$project-header-rise: 8px !default;
+$project-wipe-duration: 1.4s !default;
+$project-wipe-scale: 1.05 !default;
+
+.header__project,
+.header__meta {
+  grid-row: 2;
+  align-self: end;
+  margin-bottom: var(--margin); // the same 10px the images keep below the rule
+  display: grid;
+  column-gap: var(--gutter);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.header__project[hidden],
+.header__meta[hidden] {
+  display: none;
+}
+
+.header__project {
+  grid-column: 1 / span 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+// Below this a column is narrower than BACK TO PROJECTS: NEXT follows it
+// 16px on instead of waiting at col 2, where the two would overlap.
+@include below(project-narrow) {
+  .header__project {
+    grid-template-columns: auto auto;
+    justify-content: start;
+    column-gap: 16px;
+  }
+}
+
+.header__project-link {
+  white-space: nowrap;
+  transition: color var(--dur-state) ease;
+}
+
+@include hover {
+  .header__project:hover .header__project-link:not(:hover) {
+    color: var(--dim);
+  }
+}
+
+.header__project-link:focus-visible {
+  @include focus-ring;
+}
+
+// Name and year: 12px, −2%, mixed case — the one line in the header that
+// isn't nav type.
+.header__meta {
+  grid-column: 5 / span 8;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+// On the grid: the name in col 5, the count beside it in col 6, the year
+// after it in col 7. The count's figures are tabular, so it holds still
+// as it changes.
+.header__meta {
+  align-items: last baseline;
+}
+
+.header__meta-name {
+  grid-area: 1 / 1;
+}
+
+.header__meta-count {
+  grid-area: 1 / 2;
+  font-variant-numeric: tabular-nums;
+}
+
+.header__meta-year {
+  grid-area: 1 / 3;
+}
+
+// No year yet: it takes no place (on the phone the name and count share
+// a two-column line).
+.header__meta > .header__meta-year:empty {
+  display: none;
+}
+
+// A closing sheet no longer holds the line back: it comes in with the
+// sheet's fade (sheets.js, closeSheet).
+.page:has(.project-view.is-open:not(.is-leaving)):not(:has(.about:not([hidden], .is-closing), .contact:not([hidden], .is-closing))) .header__project,
+.page:has(.project-view.is-open:not(.is-leaving, .is-switching)):not(:has(.about:not([hidden], .is-closing), .contact:not([hidden], .is-closing))) .header__meta {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+// BACK TO PROJECTS / NEXT and the name and count fade in rising 8px
+// when a project arrives — one sweep in reading order (--k), 60ms apart
+// — and fade out rising 8px more when it leaves, 40ms apart: whole
+// letters, never cut by a mask. Carrying on upward, NEXT reads as one
+// roll: the old name drifts up and away as the new one comes up.
+.header__project > a,
+.header__meta > span {
+  display: block;
+}
+
+.header__project > a:nth-child(1) { --k: 0; }
+.header__project > a:nth-child(2) { --k: 1; }
+.header__meta-name { --k: 2; }
+.header__meta-count { --k: 3; }
+.header__meta-year { --k: 4; }
+
+@include motion {
+  .header__project.is-arriving > a,
+  .header__meta.is-arriving > span {
+    translate: 0 $project-header-rise;
+    opacity: 0;
+  }
+
+  .header__project.is-entering > a,
+  .header__meta.is-entering > span {
+    transition:
+      translate 0.8s var(--ease-out) calc(150ms + var(--k) * 60ms),
+      opacity $dur-expand ease calc(150ms + var(--k) * 60ms);
+  }
+
+  // Leaving (the page waits for it — SINK_MS / SINK_STAGGER in
+  // project/page.js).
+  .header__project.is-sinking > a,
+  .header__meta.is-sinking > span {
+    translate: 0 -#{$project-header-rise};
+    opacity: 0;
+    transition:
+      translate $dur-sink var(--ease-smooth) calc(var(--k) * 40ms),
+      opacity 0.4s ease calc(var(--k) * 40ms);
+  }
+
+  // On NEXT the name and count lead their own sweep.
+  .page:has(.project-view.is-switching) .header__meta.is-sinking > span {
+    transition-delay: calc((var(--k) - 2) * 40ms);
+  }
+
+  // On NEXT the next project's name in the NEXT label turns over with
+  // them: out with the old name, in with the new one's sweep (just
+  // before the name, by reading order).
+  .header__project.is-turning .header__project-next {
+    translate: 0 -#{$project-header-rise};
+    opacity: 0;
+    transition: translate $dur-sink var(--ease-smooth), opacity 0.4s ease;
+  }
+
+  .header__project.is-turned .header__project-next {
+    translate: 0 $project-header-rise;
+    opacity: 0;
+  }
+
+  .header__project.is-turning-in .header__project-next {
+    transition:
+      translate 0.8s var(--ease-out) 150ms,
+      opacity $dur-expand ease 150ms;
+  }
+}
+
+// NEXT, continued, turns the name and count over before the page has
+// finished changing (project/page.js, turnHeader): the line shows meanwhile.
+.page:has(.project-view.is-switching) .header__meta.is-early {
+  opacity: 1;
+  transition: none;
+}
+
+// While it leaves the line itself stays at full ink (it would otherwise
+// fade with the page); each word does its own fading.
+.page:has(.project-view.is-leaving, .project-view.is-switching) .header__project.is-sinking,
+.page:has(.project-view.is-leaving, .project-view.is-switching) .header__meta.is-sinking {
+  opacity: 1;
+  pointer-events: none;
+}
+
+// NEXT carries the next project's name, at the inactive grey.
+.header__project-next {
+  display: inline-block;
+  color: var(--dim);
+  transition: color var(--dur-state) ease;
+}
+
+.header__project-link:hover .header__project-next {
+  color: var(--text);
+}
+
+// Panels take focus when they open (sheets.js); the panel itself shows
+// no ring, its controls still do.
+.about:focus,
+.contact:focus,
+.grid-view:focus,
+.project-view:focus {
+  outline: none;
+}
+
+.project-view {
+  position: absolute;
+  inset: 0.5px 0 0; // under the main rule, which stays
+  z-index: $z-project; // under About / Contact (7)
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  align-items: start;
+  padding: var(--margin) var(--margin) var(--margin);
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.project-view[hidden] {
+  display: none;
+}
+
+.project-view.is-opening,
+.project-view.is-closing {
+  opacity: 0;
+}
+
+// See-through while a kept photo lands (app/transitions.js).
+.project-view.is-bare {
+  background: transparent;
+}
+
+.project-view.is-closing {
+  pointer-events: none;
+}
+
+// The filmstrip: 62px on the right edge of col 4, thumbs 58 × 77 four
+// apart, right-aligned. The current thumb reads in full and nudges 4px
+// left; the rest sit at 20%. Taller strips scroll inside the row.
+.strip {
+  grid-column: 4;
+  justify-self: end;
+  align-self: stretch;
+  width: $project-strip-width;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gutter);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.strip__thumb {
+  flex: 0 0 auto;
+  width: $project-thumb-width;
+  aspect-ratio: #{$project-thumb-ratio};
+  border: 0;
+  padding: 0;
+  background: var(--line-soft);
+  cursor: pointer;
+  opacity: 0.2;
+  overflow: hidden;
+  transition: opacity var(--dur-state) ease, translate var(--dur-state) var(--ease-out);
+}
+
+.strip__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.strip__thumb.is-current {
+  opacity: 1;
+  translate: -#{$project-thumb-nudge} 0;
+}
+
+// Freshly built thumbs start invisible and arrive one after another
+// (project/page.js lifts .is-new once the entrance delays are in place).
+.strip__thumb.is-new {
+  opacity: 0;
+}
+
+.strip__thumb:focus-visible {
+  @include focus-ring;
+  opacity: 1;
+}
+
+// The stage: cols 5–12 at the gallery ratio. Media sits in a tile that is
+// the left half for a portrait and the full width for a landscape; a
+// change crossfades.
+.stage {
+  grid-column: 5 / span 8;
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--gallery-ratio);
+  max-height: calc(100vh - var(--header-h) - 2 * var(--margin) - 0.5px);
+}
+
+.stage__tile {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(50% - var(--gutter) / 2);
+  overflow: hidden;
+  background: var(--line-soft);
+  opacity: 0;
+  transition: opacity var(--dur-fade) ease;
+}
+
+.stage__tile--wide {
+  width: 100%;
+}
+
+.stage__tile.is-in {
+  opacity: 1;
+}
+
+// The first media on open lands without its own fade: it sits exactly on
+// the index tile it came from.
+.stage__tile--instant {
+  transition: none;
+}
+
+// A new page's media is unmasked top-down while it settles from 105%,
+// the load sequence's media move.
+.stage__tile--wipe {
+  opacity: 1;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path $project-wipe-duration var(--ease-smooth);
+}
+
+.stage__tile--wipe :is(img, video) {
+  scale: $project-wipe-scale;
+  transition: scale $project-wipe-duration var(--ease-smooth);
+}
+
+.stage__tile--wipe.is-in {
+  clip-path: inset(0);
+}
+
+.stage__tile--wipe.is-in :is(img, video) {
+  scale: 1;
+}
+
+.stage__tile :is(img, video) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// Opening: the panel fades, then the thumbs arrive top to bottom and the
+// stage tile a beat later.
+@include motion {
+  .project-view.is-open .strip__thumb {
+    transition: opacity var(--dur-state) ease, translate var(--dur-state) var(--ease-out);
+  }
+
+  .project-view.is-entering .strip__thumb {
+    transition: opacity $dur-expand ease calc(150ms + var(--i, 0) * 50ms), translate var(--dur-state) var(--ease-out);
+  }
+}
+
+// Phone: a full-screen panel under the header.
+@include below(phone) {
+  // The name and year in order; the count is the carousel's.
+  .header__meta-name,
+  .header__meta-year,
+  .header__meta-count {
+    grid-area: auto;
+  }
+
+  .header__meta > .header__meta-count {
+    display: none;
+  }
+
+  .project-view {
+    position: fixed;
+    inset: 0;
+    z-index: $z-project;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+    padding-top: calc(var(--main-top, var(--header-h)) + var(--margin));
+  }
+
+  body:has(.project-view:not([hidden])) {
+    overflow: hidden;
+  }
+}
+
+@include below(phone) {
+  .header__project {
+    grid-column: 1 / span 6;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    column-gap: 16px;
+  }
+
+  .header__meta {
+    grid-column: 7 / span 6;
+    grid-template-columns: auto auto;
+    justify-content: end;
+    column-gap: 12px;
+  }
+
+  // The phone feed (project/feed.js buildFeed): every photo full
+  // width at its own shape, 4px apart, the page scrolling through them;
+  // the header counts the photo you are on.
+  .project-view--feed .strip,
+  .project-view--feed .stage {
+    display: none;
+  }
+
+  .project-view--feed .feed,
+  .feed__pass {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+  }
+
+  .page:has(.project-view--feed) .header__meta > .header__meta-count {
+    display: block;
+  }
+
+  // The header line stays put, as far under the nav as the photos are on
+  // the projects page; the first photo starts 10px under it (project/feed.js
+  // sets the page's top from the header's height).
+  .page:has(.project-view--feed) .header__project,
+  .page:has(.project-view--feed) .header__meta {
+    margin-top: var(--phone-air);
+  }
+
+  .feed__item {
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .feed__item--p {
+    aspect-ratio: #{$ratio-portrait};
+  }
+
+  .feed__item--l {
+    aspect-ratio: #{$ratio-landscape};
+  }
+
+  .feed__item :is(img, video) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  // NEXT on the feed (project/feed.js, continueFeed): the next project's photos
+  // rise in a column of their own over the feed; its feed is laid under
+  // it, out of sight, until the column lands.
+  .feed__incoming {
+    position: fixed;
+    top: 0;
+    left: var(--margin);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  .feed.is-under {
+    visibility: hidden;
+  }
+
+  .feed__item.is-settled {
+    transition: none;
+  }
+
+  @include motion {
+    .feed__item {
+      opacity: 0;
+      translate: 0 $grid-reveal-rise;
+      transition:
+        opacity $dur-reveal ease calc(var(--i, 0) * #{$grid-reveal-stagger}),
+        translate $dur-reveal $ease-reveal calc(var(--i, 0) * #{$grid-reveal-stagger});
+    }
+
+    .feed__item.is-in {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+}
+
+.feed {
+  display: none;
+}

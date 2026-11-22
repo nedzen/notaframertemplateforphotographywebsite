@@ -1,0 +1,134 @@
+@use "../config/tokens" as *;
+@use "../config/breakpoints" as *;
+
+// =========================================================================
+// Phone index (Figma 551-82)
+// The desktop index restacked: the active project's tiles across the
+// width (a pair of portraits 176 + 175, or one landscape, 236 tall),
+// INDEX with its count on the second half's edge, then the list with one
+// row active. The projects advance on their own: the black line under
+// the active row fills left to right over --slide-ms, and when it lands
+// the next project takes over and its tiles crossfade (components/index-list.js listens
+// for the line's animationend). Tapping a row opens that project;
+// tapping the tiles opens the one showing.
+// =========================================================================
+
+@include below(phone) {
+  // The header keeps its own 34px here: on desktop it is the band that
+  // absorbs spare height, but this page is short enough to leave some.
+  .header {
+    flex: 0 0 auto;
+  }
+
+  // No full-width rule under the header here; the list carries its own.
+  .main::before {
+    display: none;
+  }
+
+  .main {
+    margin-top: var(--phone-air); // the header band's air, as on desktop
+  }
+
+  .projects li {
+    display: block;
+  }
+
+  // .index stays display: contents (from the touch rules), so INDEX and
+  // the list are rows of the main grid under the tiles.
+
+  // Tiles: one box at the gallery ratio, every set stacked in it and only
+  // the active one shown, as on desktop.
+  .gallery {
+    display: block;
+    position: relative;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+    margin-top: 0;
+    aspect-ratio: var(--gallery-ratio);
+    max-height: none;
+    cursor: pointer;
+  }
+
+  .gallery__set {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    transition: opacity var(--dur-fade) ease;
+  }
+
+  .gallery__set.is-active {
+    opacity: 1;
+  }
+
+  .tile,
+  .tile:only-child {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  // INDEX on the first half, the count on the second half's left edge
+  // (x 180 at 375), 40px under the tiles. The mask keeps 3px above the
+  // cap line for round digits.
+  .headline {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+    padding: 3px 0 0;
+    margin-top: #{"calc(40px - 3px)"}; // literal: Sass would fold it to 37px
+  }
+
+  .headline__count {
+    justify-self: start;
+  }
+
+  // The list, 40px under INDEX: 28px rows, the number in the first of
+  // four columns and the name from the second (x 90 at 375).
+  .projects {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 40px;
+  }
+
+  .project {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    color: var(--dim);
+  }
+
+  .project.is-active {
+    color: var(--text);
+  }
+
+  .project__name {
+    grid-column: 2 / -1;
+  }
+
+  // Leaving for another page: the stacked tiles fade with the rest.
+  .main.is-leaving .gallery,
+  .main.is-leaving .projects {
+    opacity: 0;
+    transition: opacity $dur-exit ease;
+  }
+
+  .main.is-arriving .gallery,
+  .main.is-arriving .projects {
+    transition: none;
+  }
+}
+
+@keyframes slide-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+// Without motion there is no slider: the active row keeps a solid line.
+@media (max-width: 600px) and (prefers-reduced-motion: reduce) {
+  .project.is-active::after {
+    transform: none;
+  }
+}
